@@ -1,0 +1,516 @@
+plugin_prefixes:
+  - dfir_ogre_plugin
+
+output_folder: /tmp/ogre_data/
+temp_folder: /tmp/ogre_tmp/
+inner_archive_password: avproof
+plugin_folder: dfir-ogre-plugin-windows/configuration/ # configuration folder that contains XML plugins
+
+output:
+  timeline:
+    type: file
+    format: jsonl
+    date_format: iso_utc
+    with_timeline: true
+    include_empty_field: false
+    # /!\ do not change, this config is mandatory for the timeline CLI command
+    output_folder: $output_folder
+    # /!\ do not change, this config is mandatory for the timeline CLI command
+    base_file_name: $mapping_label
+
+mapping:
+  # ActivityCache
+  - original_file_pattern: '.*\\ActivitiesCache.db$'
+    plugin_file: $plugin_folder/activity_cache.xml
+    mapping_label: activity_cache
+    output:
+      - timeline
+
+  # Autoruns
+  - archive_file_pattern: 'autoruns\.csv$'
+    plugin_file: $plugin_folder/autoruns.xml
+    mapping_label: autoruns
+    output:
+      - timeline
+
+  # Chrome download history
+  - original_file_pattern: '.*\\Default\\History$'
+    plugin_file: $plugin_folder/chrome_download_history.xml
+    mapping_label: browser_download_history
+    output:
+      - timeline
+
+  # Chrome extension
+  - original_file_pattern: '.*\\extensions\\.*\\.*\\manifest.json$'
+    plugin_file: $plugin_folder/chrome_extension.xml
+    mapping_label: chrome_extension
+    output:
+      - timeline
+
+  # Chrome browsing history
+  - original_file_pattern: '.*\\Default\\History$'
+    plugin_file: $plugin_folder/chrome_history.xml
+    mapping_label: browser_history
+    output:
+      - timeline
+
+  # Evtx
+  - original_file_pattern: '.*\.evtx$'
+    plugin_file: $plugin_folder/evtx.xml
+    mapping_label: windows_events
+    output:
+      - timeline
+
+  # Evt: version 0.4.1
+  - original_file_pattern: '.*\.evt$'
+    plugin_file: $plugin_folder/evt.xml
+    mapping_label: evt
+    output:
+      - timeline
+
+  # FastFind filesystem - since Ogre version 0.4.3
+  - archive_file_pattern: '.*fastfind.*\.xml$'
+    plugin_file: $plugin_folder/fastfind_file.xml
+    mapping_label: fastfind_file
+    output:
+      - timeline
+
+  # FastFind registry - since Ogre version 0.4.3
+  - archive_file_pattern: '.*fastfind.*\.xml$'
+    plugin_file: $plugin_folder/fastfind_registry.xml
+    mapping_label: fastfind_reg
+    output:
+      - timeline
+
+  # Firefox download history
+  - original_file_pattern: '.*\\firefox\\.*\\places\.sqlite$'
+    plugin_file: $plugin_folder/firefox_download_history.xml
+    mapping_label: browser_download_history
+    output:
+      - timeline
+
+  # Firefox extensions
+  - original_file_pattern: '.*\\firefox\\profiles\\.*\\extensions.json$'
+    plugin_file: $plugin_folder/firefox_extension.xml
+    mapping_label: firefox_extension
+    output:
+      - timeline
+
+  # Firefox browsing history
+  - original_file_pattern: '.*\\firefox\\.*\\places\.sqlite$'
+    plugin_file: $plugin_folder/firefox_history.xml
+    mapping_label: browser_history
+    output:
+      - timeline
+
+  # # GetThis
+  # - archive_file_pattern: 'GetThis\.csv$'
+  #   plugin_file: $plugin_folder/get_this.xml
+  #   mapping_label: getthis
+  #   output:
+  #     - timeline
+
+  # Java webstart Idx cache file
+  - original_file_pattern: '.*java\\.*\\.*cache\\.*\\cache.idx$'
+    plugin_file: $plugin_folder/java_idx.xml
+    mapping_label: java_idx
+    output:
+      - timeline
+
+  # Lnk
+  - original_file_pattern: '.*\.lnk$'
+    plugin_file: $plugin_folder/lnk_batched.xml
+    mapping_label: lnk
+    output:
+      - timeline
+
+  # Object Info - since Ogre version 0.4.1
+  - archive_file_pattern: "GetObjInfo.csv$"
+    plugin_file: $plugin_folder/object_info.xml
+    mapping_label: objinfo
+    output:
+      - timeline
+
+  # NTFSInfo
+  - archive_file_pattern: 'NTFSInfo.*\.csv$'
+    plugin_file: $plugin_folder/ntfs_info.xml
+    mapping_label: ntfsinfo
+    output:
+      - timeline
+
+  # Parse processes from the orc file: processes1.csv
+  - archive_file_pattern: '.*processes1\.csv$'
+    plugin_file: $plugin_folder/orc_processes_1.xml
+    mapping_label: processes_orc
+    output:
+      - timeline
+
+  # Parse processes from the orc file: processes2.csv
+  - archive_file_pattern: '.*processes2\.csv$'
+    plugin_file: $plugin_folder/orc_processes_2.xml
+    mapping_label: processes_orc
+    output:
+      - timeline
+
+  # Pca App Launch record
+  - original_file_pattern: 'PcaAppLaunch.*\.txt$'
+    plugin_file: $plugin_folder/pca_app_launch.xml
+    mapping_label: pca_app_launch
+    output:
+      - timeline
+
+  # Pca General record
+  - original_file_pattern: 'PcaGeneral.*\.txt$'
+    plugin_file: $plugin_folder/pca_general_record.xml
+    mapping_label: pca_general_record
+    output:
+      - timeline
+
+  # Prefetch
+  - original_file_pattern: 'prefetch.*\.pf$'
+    plugin_file: $plugin_folder/prefetch.xml
+    mapping_label: prefetch
+    output:
+      - timeline
+
+  # Recycle Bin
+  - original_file_pattern: '\\\$Recycle.Bin\\*.$'
+    plugin_file: $plugin_folder/recycle_bin.xml
+    mapping_label: recycle_bin
+    output:
+      - timeline
+
+  # Srum
+  - original_file_pattern: '.*\\SRUDB\.dat$'
+    plugin_file: $plugin_folder/srum.xml
+    mapping_label: srum
+    output:
+      - timeline
+
+  # System Info - since Ogre version 0.4.1
+  - archive_file_pattern: "Systeminfo.csv$"
+    plugin_file: $plugin_folder/system_info.xml
+    mapping_label: systeminfo
+    output:
+      - timeline
+
+  # USNInfo
+  - archive_file_pattern: 'USNInfo.*\.csv$'
+    plugin_file: $plugin_folder/usn_info.xml
+    mapping_label: usninfo
+    output:
+      - timeline
+
+  # WER reports
+  - archive_file_pattern: '.*WER/.*Report\.wer.*$'
+    plugin_file: $plugin_folder/wer.xml
+    mapping_label: wer
+    output:
+      - timeline
+
+  ###############
+  #### Hives ####
+  ###############
+
+  # reg_system_info from SYSTEM and SOFTWARE hives - since Ogre version 0.4.1
+  - original_file_pattern: '.*\\(?:SYSTEM|SOFTWARE)$'
+    plugin_file: $plugin_folder/registry/reg_system_info.xml
+    mapping_label: reg_systeminfo
+    output:
+      - timeline
+
+  #####
+  ### Software Hive
+  #####
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\Software
+    output:
+      - timeline
+
+  # Autoruns Persistence mechanisms from the Software Registry - since Ogre version 0.4.1
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/autoruns_software.xml
+    mapping_label: reg_autoruns
+    output:
+      - timeline
+
+  # X509 certificates, from Software hive
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/certificates_software.xml
+    mapping_label: x509_cert
+    output:
+      - timeline
+
+  # Machine-wide CLSID registrations, from Software hive
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/clsid_software.xml
+    mapping_label: clsid
+    output:
+      - timeline
+
+  # Extract scheduled tasks
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/scheduled_task.xml
+    mapping_label: scheduled_tasks
+    output:
+      - timeline
+
+  # Extract the shim database
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/shim_database.xml
+    mapping_label: shim_db
+    output:
+      - timeline
+
+  # List logged-on user profiles
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/user_profile.xml
+    mapping_label: user_profile
+    output:
+      - timeline
+
+  # List Subject Interface Package
+  - original_file_pattern: '.*\\SOFTWARE$'
+    plugin_file: $plugin_folder/registry/subject_interface_package.xml
+    mapping_label: subject_interface_package
+    output:
+      - timeline
+
+  #####
+  ### System Hive
+  #####
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\System
+    output:
+      - timeline
+
+  # Application Compatibility cache
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/app_compat_cache.xml
+    mapping_label: app_compat_cache
+    output:
+      - timeline
+
+  # Autoruns Persistence mechanisms from the System Registry - since Ogre version 0.4.1
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/autoruns_system.xml
+    mapping_label: autorun_hive
+    output:
+      - timeline
+
+  # Informations about Activity Moderator(BAM/DAM), from System hive
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/bamdam.xml
+    mapping_label: bam_dam
+    output:
+      - timeline
+
+  # List every mass storage devices (USB keys, ...) ever connected, using the System hive
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/mass_storage_system.xml
+    mapping_label: mass_storage
+    output:
+      - timeline
+
+  # Network configuration (mostly ip addresses) of the computer, from System hive
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/network_configuration.xml
+    mapping_label: network_config
+    output:
+      - timeline
+
+  # List pending file rename operations that will take place at next reboot, from System hive
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/pending_file_rename.xml
+    mapping_label: pending_rename
+    output:
+      - timeline
+
+  # List services control set, from System hive
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/services_control_set.xml
+    mapping_label: services
+    output:
+      - timeline
+
+  # Extract the list of files excluded from VSS and backup operations, from System hive
+  - original_file_pattern: '.*\\SYSTEM$'
+    plugin_file: $plugin_folder/registry/snapshot_exclude.xml
+    mapping_label: backup_exclude
+    output:
+      - timeline
+
+  #####
+  ### SAM Hive
+  #####
+  - original_file_pattern: '.*\\SAM$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\Sam
+    output:
+      - timeline
+
+  #####
+  ### Components Hive
+  #####
+  - original_file_pattern: '.*\\COMPONENTS$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\Components
+    output:
+      - timeline
+
+  #####
+  ### BCD-Template Hive
+  #####
+  - original_file_pattern: '.*\\BCD-Template$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\BCDTemplate
+    output:
+      - timeline
+
+  #####
+  ### ELAM Hive
+  #####
+  - original_file_pattern: '.*\\ELAM$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\ELAM
+    output:
+      - timeline
+
+  #####
+  ### DEFAULT  Hive
+  #####
+  - original_file_pattern: '.*\\DEFAULT$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKU
+    output:
+      - timeline
+
+  #####
+  ### AMCache  Hive
+  #####
+  - original_file_pattern: '.*\\Amcache\.hve$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\AmCache
+    output:
+      - timeline
+
+  # AMCache  drivers
+  - original_file_pattern: '.*\\Amcache\.hve$'
+    plugin_file: $plugin_folder/registry/amcache_driver.xml
+    mapping_label: amcache_driver
+    output:
+      - timeline
+
+  # AMCache  files
+  - original_file_pattern: '.*\\Amcache\.hve$'
+    plugin_file: $plugin_folder/registry/amcache_files.xml
+    mapping_label: amcache_file
+    output:
+      - timeline
+
+  # AMCache  program
+  - original_file_pattern: '.*\\Amcache\.hve$'
+    plugin_file: $plugin_folder/registry/amcache_program.xml
+    mapping_label: am_cache_program
+    output:
+      - timeline
+
+  #####
+  ### User Hive
+  #####
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKU
+    output:
+      - timeline
+
+  # Registry key for most recent search history from Windows search (windows < 7) - no test data
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/acmru.xml
+    mapping_label: acmru
+    output:
+      - timeline
+
+  # IE antiphishing values - no test data
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/antifishing_file.xml
+    mapping_label: antifishing_file
+    output:
+      - timeline
+
+  # Autoruns Persistence mechanisms from the User Registry - since Ogre version 0.4.1
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/autoruns_user.xml
+    mapping_label: reg_autoruns
+    output:
+      - timeline
+
+  # X509 certificates
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/certificates_users.xml
+    mapping_label: x509_cert
+    output:
+      - timeline
+
+  # informations about applications and files accessed (windows >=10)
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/recent_app.xml
+    mapping_label: recent_app
+    output:
+      - timeline
+
+  # most recent 'Run' (WINDOWS+R) commands
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/run_mru.xml
+    mapping_label: run_mru
+    output:
+      - timeline
+
+  # UserAssist entries
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/user_assist.xml
+    mapping_label: user_assist
+    output:
+      - timeline
+
+  #####
+  ### User Class Hive
+  #####
+  - original_file_pattern: '.*\\UsrClass\.dat$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKCR
+    output:
+      - timeline
+
+  #  List all users class ids, from UsrClass hive
+  - original_file_pattern: '.*\\UsrClass\.dat$'
+    plugin_file: $plugin_folder/registry/clsid_users.xml
+    mapping_label: clsid
+    output:
+      - timeline
+
+  # MUI cache
+  - original_file_pattern: '.*\\UsrClass\.dat$'
+    plugin_file: $plugin_folder/registry/mui_cache.xml
+    mapping_label: mui_cache
+    output:
+      - timeline
+
+  # Shell Bag
+  - original_file_pattern: '.*\\UsrClass\.dat$'
+    plugin_file: $plugin_folder/registry/shell_bag.xml
+    mapping_label: shellbags
+    output:
+      - timeline

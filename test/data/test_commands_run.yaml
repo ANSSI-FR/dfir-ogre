@@ -1,0 +1,29 @@
+plugin_prefixes:
+  - test
+
+case: test
+output_folder: .tmp/output
+temp_folder: .tmp/extract
+plugin_folder: test/plugin_config/
+
+mapping:
+  - original_file_pattern: '.*Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Kernel-Event.*'
+    plugin_file: $plugin_folder/void.xml
+    mapping_label: event
+    output:
+      - rawjson
+  - archive_file_pattern: '.*arp_.*\.txt'
+    plugin_file: $plugin_folder/void.xml
+    mapping_label: arp
+    output:
+      - rawjson
+
+output:
+  rawjson:
+    type: file
+    format: jsonl
+    date_format: iso
+    with_timeline: false
+    with_qualifiers: false
+    output_folder: event
+    base_file_name: test

@@ -1,0 +1,25 @@
+plugin_prefixes:
+  - test
+
+case: test
+output_folder: .tmp/output
+temp_folder: .tmp/extract
+plugin_folder: test/plugin_config/
+report_folder: /data/$case/ogre/$dir_tree/ogre_report
+
+mapping:
+  - archive_file_pattern: '.*\.txt$'
+    plugin_file: $plugin_folder/void.xml
+    mapping_label: text_output
+    output:
+      - rawjson
+
+output:
+  rawjson:
+    type: file
+    format: jsonl
+    date_format: iso
+    with_timeline: false
+    with_qualifiers: false
+    output_folder: $output_folder/$archive_name/$mapping_label/$timestamp
+    base_file_name: $parser_$file_name_$timestamp
