@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<plugin parser="Void">
+  <mapping data_type="empty">
+    <description>test parser</description>
+    <default_parser value="Ignore" />
+    <default_date_pattern value='%Y%m%d-%H%M%S' />
+    <fields>
+    </fields>
+  </mapping>
+</plugin>

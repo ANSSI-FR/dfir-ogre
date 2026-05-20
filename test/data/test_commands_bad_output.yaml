@@ -1,0 +1,24 @@
+plugin_prefixes:
+  - test
+
+case: test
+output_folder: .tmp/output
+temp_folder: .tmp/extract
+plugin_folder: test/plugin_config/
+
+mapping:
+  - archive_file_pattern: ".*.txt$"
+    plugin_file: $plugin_folder/void.xml
+    mapping_label: text_output
+    output:
+      - bad_output
+
+output:
+  rawjson:
+    type: file
+    format: jsonl
+    date_format: iso
+    with_timeline: false
+    with_qualifiers: false
+    output_folder: .tmp/
+    base_file_name: test

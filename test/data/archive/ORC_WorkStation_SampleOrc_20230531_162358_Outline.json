@@ -1,0 +1,445 @@
+{
+    "version": "1.0",
+    "dfir-orc": {
+        "outline": {
+            "id": "{072AE647-1CBD-44EA-82AC-D2532B0F499A}",
+            "version": "v10.2.0-14-ge4c95b70",
+            "start": "2023-05-31T16:23:58Z",
+            "timestamp": "20230531_162358",
+            "mothership": {
+                "command_line": "/local=\\\\10.0.0.3\\Share\\orc\\sch\\ptf2ref_10.2.1_beta\\Orc_ptf2ref_10.2.1_beta3_2archives.xml /overwrite",
+                "sha1": "7C1303CD2585F765004B2683C0AFF1FEEFE399DF"
+            },
+            "output": "C:\\Windows\\System32",
+            "temp": "C:\\Windows\\TEMP\\WorkingTemp",
+            "archives": [
+                {
+                    "keyword": "ORC_General",
+                    "file": "ORC_WorkStation_W11-22H2U_General.7z",
+                    "archive_timeout": 14400,
+                    "command_timeout": 36000,
+                    "commands": [
+                        "USNInfo",
+                        "NTFSInfo_Quick_Shadows",
+                        "NTFSInfo_Details_Current",
+                        "FatInfo",
+                        "GetThis_Default",
+                        "GetThis_Live",
+                        "SystemInfo",
+                        "Autoruns",
+                        "GetBootCode",
+                        "Handle",
+                        "GetObjInfo",
+                        "Route",
+                        "Dns_cache",
+                        "Tcpvcon",
+                        "Netstat",
+                        "GetSamples",
+                        "Listdlls",
+                        "BITS_jobs",
+                        "VSS_list",
+                        "EnumLocs",
+                        "WFP_dumper",
+                        "Arp_cache"
+                    ]
+                },
+                {
+                    "keyword": "ORC_Powershell",
+                    "file": "ORC_WorkStation_W11-22H2U_Powershell.7z",
+                    "archive_timeout": 7200,
+                    "command_timeout": 36000,
+                    "commands": [
+                        "EventConsumer",
+                        "dotNetAssemblyTrace",
+                        "Processes1",
+                        "Processes2",
+                        "Azure_Attested",
+                        "Azure_Instance",
+                        "Azure_ScheduledEvents",
+                        "Azure_Identity",
+                        "AWS_Metadata"
+                    ]
+                }
+            ],
+            "process": {
+                "binary": "C:\\Windows\\Temp\\DFIR-Orc_x64.exe",
+                "syswow64": false,
+                "command_line": "\"C:\\Windows\\Temp\\DFIR-Orc_x64.exe\" WolfLauncher /local=\\\\10.0.0.3\\Share\\orc\\sch\\ptf2ref_10.2.1_beta\\Orc_ptf2ref_10.2.1_beta3_2archives.xml /overwrite /MothershipHandle=0x2f4",
+                "user": {
+                    "username": "NT AUTHORITY\\SYSTEM",
+                    "SID": "S-1-5-18",
+                    "elevated": true,
+                    "locale": "en-US",
+                    "language": "English (United States)"
+                },
+                "environment": [
+                    {
+                        "Name": "ALLUSERSPROFILE",
+                        "Value": "C:\\ProgramData"
+                    },
+                    {
+                        "Name": "APPDATA",
+                        "Value": "C:\\Windows\\system32\\config\\systemprofile\\AppData\\Roaming"
+                    },
+                    {
+                        "Name": "CommonProgramFiles",
+                        "Value": "C:\\Program Files\\Common Files"
+                    },
+                    {
+                        "Name": "CommonProgramFiles(x86)",
+                        "Value": "C:\\Program Files (x86)\\Common Files"
+                    },
+                    {
+                        "Name": "CommonProgramW6432",
+                        "Value": "C:\\Program Files\\Common Files"
+                    },
+                    {
+                        "Name": "COMPUTERNAME",
+                        "Value": "W11-22H2U"
+                    },
+                    {
+                        "Name": "ComSpec",
+                        "Value": "C:\\Windows\\system32\\cmd.exe"
+                    },
+                    {
+                        "Name": "DriverData",
+                        "Value": "C:\\Windows\\System32\\Drivers\\DriverData"
+                    },
+                    {
+                        "Name": "endfile",
+                        "Value": "\\\\10.0.0.3\\Share\\20230531T1823006986_ptf2ref10.2.1beta32archives\\status\\finished\\W11-22H2U.txt"
+                    },
+                    {
+                        "Name": "LOCALAPPDATA",
+                        "Value": "C:\\Windows\\system32\\config\\systemprofile\\AppData\\Local"
+                    },
+                    {
+                        "Name": "NUMBER_OF_PROCESSORS",
+                        "Value": "2"
+                    },
+                    {
+                        "Name": "OS",
+                        "Value": "Windows_NT"
+                    },
+                    {
+                        "Name": "OSVERSION",
+                        "Value": "10.0"
+                    },
+                    {
+                        "Name": "Path",
+                        "Value": "C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Windows\\system32\\config\\systemprofile\\AppData\\Local\\Microsoft\\WindowsApps"
+                    },
+                    {
+                        "Name": "PATHEXT",
+                        "Value": ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
+                    },
+                    {
+                        "Name": "PROCESSOR_ARCHITECTURE",
+                        "Value": "AMD64"
+                    },
+                    {
+                        "Name": "PROCESSOR_IDENTIFIER",
+                        "Value": "Intel64 Family 6 Model 85 Stepping 7, GenuineIntel"
+                    },
+                    {
+                        "Name": "PROCESSOR_LEVEL",
+                        "Value": "6"
+                    },
+                    {
+                        "Name": "PROCESSOR_REVISION",
+                        "Value": "5507"
+                    },
+                    {
+                        "Name": "ProgramData",
+                        "Value": "C:\\ProgramData"
+                    },
+                    {
+                        "Name": "ProgramFiles",
+                        "Value": "C:\\Program Files"
+                    },
+                    {
+                        "Name": "ProgramFiles(x86)",
+                        "Value": "C:\\Program Files (x86)"
+                    },
+                    {
+                        "Name": "ProgramW6432",
+                        "Value": "C:\\Program Files"
+                    },
+                    {
+                        "Name": "PROMPT",
+                        "Value": "$P$G"
+                    },
+                    {
+                        "Name": "PSModulePath",
+                        "Value": "%ProgramFiles%\\WindowsPowerShell\\Modules;C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\Modules"
+                    },
+                    {
+                        "Name": "PUBLIC",
+                        "Value": "C:\\Users\\Public"
+                    },
+                    {
+                        "Name": "resultpath",
+                        "Value": "\\\\10.0.0.3\\Share\\20230531T1823006986_ptf2ref10.2.1beta32archives\\results\\W11-22H2U\\"
+                    },
+                    {
+                        "Name": "scriptpath",
+                        "Value": "\\\\10.0.0.3\\Share\\20230531T1823006986_ptf2ref10.2.1beta32archives"
+                    },
+                    {
+                        "Name": "start",
+                        "Value": "18:23:36.55"
+                    },
+                    {
+                        "Name": "SystemDrive",
+                        "Value": "C:"
+                    },
+                    {
+                        "Name": "SystemRoot",
+                        "Value": "C:\\Windows"
+                    },
+                    {
+                        "Name": "TEMP",
+                        "Value": "C:\\Windows\\TEMP"
+                    },
+                    {
+                        "Name": "timefile",
+                        "Value": "\\\\10.0.0.3\\Share\\20230531T1823006986_ptf2ref10.2.1beta32archives\\status\\running\\W11-22H2U.txt"
+                    },
+                    {
+                        "Name": "TMP",
+                        "Value": "C:\\Windows\\TEMP"
+                    },
+                    {
+                        "Name": "USERDOMAIN",
+                        "Value": "WORKGROUP"
+                    },
+                    {
+                        "Name": "USERNAME",
+                        "Value": "W11-22H2U$"
+                    },
+                    {
+                        "Name": "USERPROFILE",
+                        "Value": "C:\\Windows\\system32\\config\\systemprofile"
+                    },
+                    {
+                        "Name": "windir",
+                        "Value": "C:\\Windows"
+                    },
+                    {
+                        "Name": "\\\"RESULTPATH",
+                        "Value": "\\\\10.0.0.3\\Share\\20230531T1823006986_ptf2ref10.2.1beta32archives\\results\\W11-22H2U\\\\\" "
+                    }
+                ]
+            },
+            "system": {
+                "name": "W11-22H2U",
+                "fullname": "W11-22H2U",
+                "type": "WorkStation",
+                "architecture": "x64",
+                "operating_system": {
+                    "description": "Microsoft Windows 10 Enterprise Edition (build 22621), 64-bit",
+                    "version": "10.0",
+                    "locale": "en-US",
+                    "language": "English (United States)",
+                    "tag": [
+                        "OSBuild#22621",
+                        "Release#22H2",
+                        "Windows",
+                        "Windows10",
+                        "WorkStation",
+                        "x64"
+                    ],
+                    "time_zone": {
+                        "daylight": "Romance Daylight Time",
+                        "daylight_bias": -60,
+                        "standard": "Romance Standard Time",
+                        "standard_bias": 0,
+                        "current_bias": -60,
+                        "current": "daylight"
+                    },
+                    "qfe": [
+                        {
+                            "hotfix_id": "KB5022497",
+                            "installed_on": "2/16/2023"
+                        },
+                        {
+                            "hotfix_id": "KB5012170",
+                            "installed_on": "12/14/2022"
+                        },
+                        {
+                            "hotfix_id": "KB5026372",
+                            "installed_on": "5/20/2023"
+                        },
+                        {
+                            "hotfix_id": "KB5025351",
+                            "installed_on": "5/19/2023"
+                        }
+                    ]
+                },
+                "physical_drives": [
+                    {
+                        "path": "\\\\.\\PHYSICALDRIVE0",
+                        "type": "Fixed hard disk media",
+                        "serial": 0,
+                        "size": 136358691840,
+                        "status": "OK"
+                    }
+                ],
+                "mounted_volumes": [
+                    {
+                        "path": "C:\\",
+                        "label": "",
+                        "serial": 4075467004,
+                        "file_system": "NTFS",
+                        "device_id": "\\\\?\\Volume{3f652f7e-3e61-4021-8354-b96c9dded8a3}\\",
+                        "is_boot": true,
+                        "is_system": false,
+                        "size": 135592407040,
+                        "freespace": 114218807296,
+                        "type": "Fixed"
+                    },
+                    {
+                        "path": "\\\\?\\Volume{7ea85d72-2559-42c8-890c-d17fd2d944a2}\\",
+                        "label": "",
+                        "serial": 849334515,
+                        "file_system": "NTFS",
+                        "device_id": "\\\\?\\Volume{7ea85d72-2559-42c8-890c-d17fd2d944a2}\\",
+                        "is_boot": false,
+                        "is_system": false,
+                        "size": 648015872,
+                        "freespace": 86720512,
+                        "type": "Fixed"
+                    },
+                    {
+                        "path": "\\\\?\\Volume{d7756165-a89b-4157-811c-5f93f2211011}\\",
+                        "label": "",
+                        "serial": 1357477628,
+                        "file_system": "FAT32",
+                        "device_id": "\\\\?\\Volume{d7756165-a89b-4157-811c-5f93f2211011}\\",
+                        "is_boot": false,
+                        "is_system": true,
+                        "size": 100663296,
+                        "freespace": 67929088,
+                        "type": "Fixed"
+                    },
+                    {
+                        "path": "D:\\",
+                        "label": "",
+                        "serial": 0,
+                        "file_system": "",
+                        "device_id": "\\\\?\\Volume{c47885f4-3bac-11ed-bb5b-806e6f6e6963}\\",
+                        "is_boot": false,
+                        "is_system": false,
+                        "size": 0,
+                        "freespace": 0,
+                        "type": "CDROM"
+                    }
+                ],
+                "physical_memory": {
+                    "current_load": 76,
+                    "physical": 1284493312,
+                    "pagefile": 2022690816,
+                    "available_physical": 299868160,
+                    "available_pagefile": 946192384
+                },
+                "cpu": [
+                    {
+                        "manufacturer": "Intel",
+                        "name": "Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz",
+                        "physical_processors": 2,
+                        "logical_processors": 2,
+                        "hyperthreading": false
+                    }
+                ],
+                "network": {
+                    "adapter": [
+                        {
+                            "name": "{79C695EF-12B9-494B-88BD-40EA1F102604}",
+                            "friendly_name": "Ethernet",
+                            "description": "Microsoft Hyper-V Network Adapter",
+                            "physical": "0-15-5D-3C-4-DB",
+                            "dns_suffix": "",
+                            "address": [
+                                {
+                                    "ipv6": "fe80::3858:9b08:6253:d271%7",
+                                    "mode": "unicast"
+                                },
+                                {
+                                    "ipv4": "10.2.11.4",
+                                    "mode": "unicast"
+                                }
+                            ],
+                            "dns_server": [
+                                {
+                                    "ipv4": "8.8.8.8"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "{C47885DA-3BAC-11ED-BB5B-806E6F6E6963}",
+                            "friendly_name": "Loopback Pseudo-Interface 1",
+                            "description": "Software Loopback Interface 1",
+                            "physical": "",
+                            "dns_suffix": "",
+                            "address": [
+                                {
+                                    "ipv6": "::1",
+                                    "mode": "unicast"
+                                },
+                                {
+                                    "ipv4": "127.0.0.1",
+                                    "mode": "unicast"
+                                }
+                            ],
+                            "dns_server": [
+                                {
+                                    "ipv6": "fec0:0:0:ffff::1%1"
+                                },
+                                {
+                                    "ipv6": "fec0:0:0:ffff::2%1"
+                                },
+                                {
+                                    "ipv6": "fec0:0:0:ffff::3%1"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "profile_list": {
+                "default_profile": "C:\\Users\\Default",
+                "profiles_directory": "C:\\Users",
+                "program_data": "C:\\ProgramData",
+                "public_path": "C:\\Users\\Public",
+                "profile": [
+                    {
+                        "sid": "S-1-5-18",
+                        "path": "C:\\Windows\\system32\\config\\systemprofile",
+                        "user": "NT AUTHORITY\\SYSTEM",
+                        "key_last_write": "2022-05-07 05:28:05.917"
+                    },
+                    {
+                        "sid": "S-1-5-19",
+                        "path": "C:\\Windows\\ServiceProfiles\\LocalService",
+                        "user": "NT AUTHORITY\\LOCAL SERVICE",
+                        "key_last_write": "2022-05-07 05:28:05.917"
+                    },
+                    {
+                        "sid": "S-1-5-20",
+                        "path": "C:\\Windows\\ServiceProfiles\\NetworkService",
+                        "user": "NT AUTHORITY\\NETWORK SERVICE",
+                        "key_last_write": "2022-05-07 05:28:05.917"
+                    },
+                    {
+                        "sid": "S-1-5-21-2845889574-626851225-508676953-1001",
+                        "path": "C:\\Users\\Admin",
+                        "user": "W11-22H2U\\Admin",
+                        "local_load_time": "2023-05-22 08:52:18.022",
+                        "local_unload_time": "2023-05-22 08:58:20.552",
+                        "key_last_write": "2023-05-22 08:58:20.552"
+                    }
+                ]
+            }
+        }
+    }
+}

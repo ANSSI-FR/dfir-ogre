@@ -1,0 +1,36 @@
+plugin_prefixes:
+  - test
+
+case: test
+output_folder: .tmp/main/output
+temp_folder: .tmp/main/tmp
+plugin_folder: test/plugin_config/
+inner_archive_password: password
+
+mapping:
+  - archive_file_pattern: "hello.txt"
+    plugin_file: $plugin_folder/sample_text.xml
+    mapping_label: text_output
+    output:
+      - rawjson
+
+output:
+  rawjson:
+    type: file
+    format: jsonl
+    date_format: iso
+    with_timeline: false
+    with_qualifiers: false
+    include_empty_field: false
+    output_folder: $output_folder/$archive_name/$mapping_label/
+    base_file_name: $file_name
+
+  gzip:
+    type: file
+    format: jsonl
+    date_format: iso
+    with_timeline: false
+    with_qualifiers: false
+    include_empty_field: false
+    output_folder: $output_folder/$archive_name/$output_name/
+    base_file_name: $file_name

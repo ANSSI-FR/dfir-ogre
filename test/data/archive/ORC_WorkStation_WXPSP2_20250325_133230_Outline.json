@@ -1,0 +1,648 @@
+{
+    "version": "1.0",
+    "dfir-orc": {
+        "outline": {
+            "id": "{5A2DB544-53B7-41AE-A9E8-E2A3BB865AE7}",
+            "version": "v10.2.6-51-g2e749611",
+            "start": "2025-03-25T13:32:30Z",
+            "timestamp": "20250325_133230",
+            "computer_name": "WXPSP2",
+            "system_type": "WorkStation",
+            "mothership": {
+                "command_line": "\\\\10.0.0.3\\share\\orc\\.\\test_10.2.7-003\\Orc.exe /local=\\\\10.0.0.3\\share\\orc\\.\\test_10.2.7-003\\local_bits_smb.xml /log:file,level=debug "
+            },
+            "output": "C:\\WINDOWS\\TEMP\\test_10.2.7-003",
+            "temp": "C:\\WINDOWS\\TEMP\\WorkingTemp",
+            "archives": [
+                {
+                    "keyword": "ORC_FastFind",
+                    "file": "ORC_WorkStation_WXPSP2_FastFind.7z",
+                    "archive_timeout": 7200,
+                    "command_timeout": 36000,
+                    "commands": [
+                        {
+                            "name": "FastFind",
+                            "output": [
+                                {
+                                    "name": "FastFind_result.xml",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "FastFind.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "FastFind.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "keyword": "ORC_General",
+                    "file": "ORC_WorkStation_WXPSP2_General.7z",
+                    "archive_timeout": 14400,
+                    "command_timeout": 36000,
+                    "commands": [
+                        {
+                            "name": "Flashback",
+                            "output": [
+                                {
+                                    "name": "Flashback_results",
+                                    "source": "directory"
+                                },
+                                {
+                                    "name": "flashback.log",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "USNInfo",
+                            "output": [
+                                {
+                                    "name": "USNInfo.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "USNInfo.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "USNInfo.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "NTFSInfo_Quick_Shadows",
+                            "output": [
+                                {
+                                    "name": "NTFSInfo_quick.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_i30Info_quick.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_SecDesc_quick.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_quick.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "NTFSInfo_quick.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "NTFSInfo_Details_Current",
+                            "output": [
+                                {
+                                    "name": "NTFSInfo_details.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_i30Info_details.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_SecDesc_details.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_details.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "NTFSInfo_details.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "FatInfo",
+                            "output": [
+                                {
+                                    "name": "FatInfo_detail.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "FatInfo_detail.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "FatInfo_detail.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetThis_Default",
+                            "output": [
+                                {
+                                    "name": "GetThis_Default.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetThis_Default.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "GetThis_Default.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetThis_Additional",
+                            "output": [
+                                {
+                                    "name": "GetThis_Additional.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetThis_Additional.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "GetThis_Additional.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetBrowsers_History",
+                            "output": [
+                                {
+                                    "name": "GetBrowsers_History.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetBrowsers_History.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "GetBrowsers_History.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetResidents",
+                            "output": [
+                                {
+                                    "name": "Residents.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "Residents.log",
+                                    "source": "stderr"
+                                },
+                                {
+                                    "name": "Residents.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "SystemInfo",
+                            "output": [
+                                {
+                                    "name": "Systeminfo.csv",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Autoruns",
+                            "output": [
+                                {
+                                    "name": "autoruns.csv",
+                                    "source": "stderr"
+                                },
+                                {
+                                    "name": "autoruns.log",
+                                    "source": "stderr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetBootCode",
+                            "output": [
+                                {
+                                    "name": "BootCode.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "BootCode.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "BootCode.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Handle",
+                            "output": [
+                                {
+                                    "name": "handle.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetObjInfo",
+                            "output": [
+                                {
+                                    "name": "GetObjInfo.csv",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetObjInfo.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "GetObjInfo.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Route",
+                            "output": [
+                                {
+                                    "name": "routes.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Dns_cache",
+                            "output": [
+                                {
+                                    "name": "dns_cache.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Tcpvcon",
+                            "output": [
+                                {
+                                    "name": "Tcpvcon.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Netstat",
+                            "output": [
+                                {
+                                    "name": "netstat.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetSamples",
+                            "output": [
+                                {
+                                    "name": "GetSamples_getthis.xml",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetSamples_autoruns.xml",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetSamples_sampleinfo.csv",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetSamples_timeline.csv",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetSamples.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "GetSamples.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "GetSamples.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Listdlls",
+                            "output": [
+                                {
+                                    "name": "Listdlls.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VSS_list",
+                            "output": [
+                                {
+                                    "name": "VSS_list.csv",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "VSS_list.log",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "VSS_list.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "EnumLocs",
+                            "output": [
+                                {
+                                    "name": "Enumlocs.txt",
+                                    "source": "stdouterr"
+                                },
+                                {
+                                    "name": "NTFSUtil.dev.log",
+                                    "source": "file"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Arp_cache",
+                            "output": [
+                                {
+                                    "name": "arp_cache.txt",
+                                    "source": "stdouterr"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "process": {
+                "binary": "\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe",
+                "syswow64": false,
+                "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" WolfLauncher /local=\\\\10.0.0.3\\share\\orc\\.\\test_10.2.7-003\\local_bits_smb.xml /log:file,level=debug /Mothership=0x6b0",
+                "user": {
+                    "username": "NT AUTHORITY\\SYSTEM",
+                    "SID": "S-1-5-18",
+                    "elevated": false,
+                    "locale": "fr-FR",
+                    "language": "English (United States)"
+                },
+                "environment": [
+                    {
+                        "Name": "ALLUSERSPROFILE",
+                        "Value": "C:\\Documents and Settings\\All Users"
+                    },
+                    {
+                        "Name": "CommonProgramFiles",
+                        "Value": "C:\\Program Files\\Common Files"
+                    },
+                    {
+                        "Name": "COMPUTERNAME",
+                        "Value": "WXPSP2"
+                    },
+                    {
+                        "Name": "ComSpec",
+                        "Value": "C:\\WINDOWS\\system32\\cmd.exe"
+                    },
+                    {
+                        "Name": "endfile",
+                        "Value": "\\\\10.0.0.3\\Share\\20250325T1433223465_.test10.2.7-003\\status\\finished\\WXPSP2.txt"
+                    },
+                    {
+                        "Name": "FP_NO_HOST_CHECK",
+                        "Value": "NO"
+                    },
+                    {
+                        "Name": "NUMBER_OF_PROCESSORS",
+                        "Value": "1"
+                    },
+                    {
+                        "Name": "OS",
+                        "Value": "Windows_NT"
+                    },
+                    {
+                        "Name": "OSVERSION",
+                        "Value": "5.1"
+                    },
+                    {
+                        "Name": "Path",
+                        "Value": "C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem"
+                    },
+                    {
+                        "Name": "PATHEXT",
+                        "Value": ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH"
+                    },
+                    {
+                        "Name": "PROCESSOR_ARCHITECTURE",
+                        "Value": "x86"
+                    },
+                    {
+                        "Name": "PROCESSOR_IDENTIFIER",
+                        "Value": "x86 Family 6 Model 85 Stepping 7, GenuineIntel"
+                    },
+                    {
+                        "Name": "PROCESSOR_LEVEL",
+                        "Value": "6"
+                    },
+                    {
+                        "Name": "PROCESSOR_REVISION",
+                        "Value": "5507"
+                    },
+                    {
+                        "Name": "ProgramFiles",
+                        "Value": "C:\\Program Files"
+                    },
+                    {
+                        "Name": "PROMPT",
+                        "Value": "$P$G"
+                    },
+                    {
+                        "Name": "resultpath",
+                        "Value": "\\\\10.0.0.3\\Share\\20250325T1433223465_.test10.2.7-003\\results\\WXPSP2\\"
+                    },
+                    {
+                        "Name": "scriptpath",
+                        "Value": "\\\\10.0.0.3\\Share\\20250325T1433223465_.test10.2.7-003"
+                    },
+                    {
+                        "Name": "start",
+                        "Value": "14:32:26,32"
+                    },
+                    {
+                        "Name": "SystemDrive",
+                        "Value": "C:"
+                    },
+                    {
+                        "Name": "SystemRoot",
+                        "Value": "C:\\WINDOWS"
+                    },
+                    {
+                        "Name": "TEMP",
+                        "Value": "C:\\WINDOWS\\TEMP"
+                    },
+                    {
+                        "Name": "timefile",
+                        "Value": "\\\\10.0.0.3\\Share\\20250325T1433223465_.test10.2.7-003\\status\\running\\WXPSP2.txt"
+                    },
+                    {
+                        "Name": "TMP",
+                        "Value": "C:\\WINDOWS\\TEMP"
+                    },
+                    {
+                        "Name": "USERPROFILE",
+                        "Value": "C:\\Documents and Settings\\LocalService"
+                    },
+                    {
+                        "Name": "windir",
+                        "Value": "C:\\WINDOWS"
+                    },
+                    {
+                        "Name": "\\\"RESULTPATH",
+                        "Value": "\\\\10.0.0.3\\Share\\20250325T1433223465_.test10.2.7-003\\results\\WXPSP2\\\\\" "
+                    }
+                ]
+            },
+            "system": {
+                "name": "WXPSP2",
+                "fullname": "WXPSP2",
+                "type": "WorkStation",
+                "codepage": 850,
+                "codepage_name": "850   (OEM - Multilingual Latin I)",
+                "hypervisor": "none",
+                "architecture": "x86",
+                "operating_system": {
+                    "description": "Microsoft Windows XP Professional Service Pack 2 (build 2600)",
+                    "version": "5.1",
+                    "locale": "fr-FR",
+                    "language": "English (United States)",
+                    "install_date": "2019-07-18T14:32:50Z",
+                    "shutdown_time": "2019-09-06T18:03:55Z",
+                    "tag": [
+                        "OSBuild#2600",
+                        "Release#SP2",
+                        "Windows",
+                        "WindowsXP",
+                        "WorkStation",
+                        "x86"
+                    ],
+                    "time_zone": {
+                        "daylight": "Romance Standard Time",
+                        "daylight_bias": -60,
+                        "standard": "Romance Standard Time",
+                        "standard_bias": 0,
+                        "current_bias": -60,
+                        "current": "standard"
+                    },
+                    "qfe": [
+                        {
+                            "hotfix_id": "Q147222",
+                            "installed_on": ""
+                        }
+                    ]
+                },
+                "physical_drives": [],
+                "mounted_volumes": [],
+                "physical_memory": {
+                    "current_load": 27,
+                    "physical": 536330240,
+                    "pagefile": 2112675840,
+                    "available_physical": 390701056,
+                    "available_pagefile": 1993125888
+                },
+                "cpu": [
+                    {
+                        "manufacturer": "Intel",
+                        "name": "Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz",
+                        "physical_processors": 1,
+                        "logical_processors": 1,
+                        "hyperthreading": false
+                    }
+                ],
+                "network": {
+                    "adapter": [
+                        {
+                            "name": "{79A42DFD-1C59-4A2D-83F8-F2C17A3AA39C}",
+                            "friendly_name": "Local Area Connection",
+                            "description": "Intel 21140-Based PCI Fast Ethernet Adapter (Generic) - Packet Scheduler Miniport",
+                            "physical": "0-15-5D-3C-4-19",
+                            "dns_suffix": "",
+                            "address": [
+                                {
+                                    "ipv4": "10.2.3.3",
+                                    "mode": "unicast"
+                                }
+                            ],
+                            "dns_server": [
+                                {
+                                    "ipv4": "8.8.8.8"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "MS TCP Loopback interface",
+                            "friendly_name": "MS TCP Loopback interface",
+                            "description": "MS TCP Loopback interface",
+                            "physical": "",
+                            "dns_suffix": "",
+                            "address": [
+                                {
+                                    "ipv4": "127.0.0.1",
+                                    "mode": "unicast"
+                                }
+                            ],
+                            "dns_server": []
+                        }
+                    ]
+                }
+            },
+            "profile_list": {
+                "profiles_directory": "C:\\Documents and Settings",
+                "profile": [
+                    {
+                        "sid": "S-1-5-18",
+                        "path": "C:\\WINDOWS\\system32\\config\\systemprofile",
+                        "user": "NT AUTHORITY\\SYSTEM",
+                        "key_last_write": "2019-07-18 14:32:50.530"
+                    },
+                    {
+                        "sid": "S-1-5-19",
+                        "path": "C:\\Documents and Settings\\LocalService",
+                        "user": "NT AUTHORITY\\LOCAL SERVICE",
+                        "key_last_write": "2025-03-24 02:20:29.265"
+                    },
+                    {
+                        "sid": "S-1-5-20",
+                        "path": "C:\\Documents and Settings\\NetworkService",
+                        "user": "NT AUTHORITY\\NETWORK SERVICE",
+                        "key_last_write": "2025-03-24 02:19:27.531"
+                    },
+                    {
+                        "sid": "S-1-5-21-682003330-115176313-725345543-1003",
+                        "path": "C:\\Documents and Settings\\Admin",
+                        "user": "WXPSP2\\Admin",
+                        "key_last_write": "2019-09-06 18:03:52.781"
+                    }
+                ]
+            }
+        }
+    }
+}

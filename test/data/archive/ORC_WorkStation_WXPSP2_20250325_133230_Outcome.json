@@ -1,0 +1,1299 @@
+{
+    "version": "1.0",
+    "dfir-orc": {
+        "outcome": {
+            "id": "{5A2DB544-53B7-41AE-A9E8-E2A3BB865AE7}",
+            "timestamp": "20250325_133230",
+            "start": "2025-03-25T13:32:30Z",
+            "end": "2025-03-25T13:52:31Z",
+            "computer_name": "WXPSP2",
+            "system_type": "WorkStation",
+            "mothership": {
+                "sha1": "",
+                "command_line": "\\\\10.0.0.3\\share\\orc\\.\\test_10.2.7-003\\Orc.exe /local=\\\\10.0.0.3\\share\\orc\\.\\test_10.2.7-003\\local_bits_smb.xml /log:file,level=debug "
+            },
+            "wolf_launcher": {
+                "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                "version": "v10.2.6-51-g2e749611",
+                "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" WolfLauncher /local=\\\\10.0.0.3\\share\\orc\\.\\test_10.2.7-003\\local_bits_smb.xml /log:file,level=debug /Mothership=0x6b0"
+            },
+            "console": {
+                "file": {
+                    "name": ""
+                }
+            },
+            "log": {
+                "file": {
+                    "name": "ORC_WorkStation_WXPSP2_20250325_133230.log"
+                }
+            },
+            "outline": {
+                "file": {
+                    "name": "ORC_WorkStation_WXPSP2_20250325_133230_Outline.json"
+                }
+            },
+            "recipients": [
+                {
+                    "name": "test",
+                    "public_key": "-----BEGIN CERTIFICATE-----MIIFDTCCAvWgAwIBAgIUPLrt2jWU4L1wPconCsd7y4/hhyMwDQYJKoZIhvcNAQELBQAwFjEUMBIGA1UEAwwLY29udG9zby5jb20wHhcNMjIwMjA3MTIwNTI4WhcNMjIwMzA5MTIwNTI4WjAWMRQwEgYDVQQDDAtjb250b3NvLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBANga8OIkmGQYE27qiMHgYc0I0ikMPhJXa6LXvDBrzPwfpWmo6TncnGfKwO0ZU8fpzVXUIC+bziD01j8r0AJRJop0d7v0/DG91gFuyFcZ9vc3QkA5WJCPJ5gp7m54h0/+wOM06oxJtP/tnrYkg438iD7eGKBYSVEa2f1vBIncii+xFIBrZY66c5xnqnGmGJdoReEYUrmLkPXUaKE3np0zq0e+Ctr9KpSFGY8rH0tOXJIJs3SaNqvr1T4cs9nSMhrHbInBv2eTql1aU4GB4EKThNn/9UIZ+3dCqbOZ25k0dYASKkTg1v7PkQ4d2GHD7wO1wt4NHSwZ9F9V58ATIvufi65IP7YZMilm7RbZ2CuMZjp68RJKR35kui36feIZcln6DW/dWIPjMwBV8IdtZV1+3LB8vNkmdOw7SLLAjPhZzAN0Qqffm0WhrbjZLilkDj6beauHxVeVlZ32Sa0qfOm0+WaKcC2wIfNkM/0nGqaea4ed8oM1s0BP+0NPWsDw0SJj+xCHmvF1A1LryNCkOiUlsgEVYVFCEKZuVL8TsQ13LmiiSG4B7MHAN0eCdEqaxLqqCpn8Sr6EdFWfs87klD1CnXGO3ahfw5LwnQzfrYzVH4JYejdzj3Py57AJBaP3bBjlh34eHa49P8r+qpyRFPYyydyQYcmCku6tn7onuAoJ72tJAgMBAAGjUzBRMB0GA1UdDgQWBBQMh2dGfXD8ecgoTwsP+FjCehfKgzAfBgNVHSMEGDAWgBQMh2dGfXD8ecgoTwsP+FjCehfKgzAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4ICAQA8Bnm3eGNvupxNhWsE62x4Y1/FTwlVMKLV8qg0HDWK/5Cpm6MeWWUmkCiFwSzCXO0/2L7wEx3BkehsjIlmXiw7EiJkQ9r1Ux7AYJ04jbE2pU1zSUlJADq8iCrOO+zGx9IR5/P5EjMxi4ifB6jwpV3VWgNawyqgSnqa+kw6/Zg/v/+YDlk5XNIHuMJKOWnQkov5y2ldF5hcAMVWreuIP3NL39CQawqLThJFu9QK28vB75S3KdgvvEblBvjD0KJ8HC1EyfSfuMTBwQYKcqmcCHFc1dhwlRmgWMfBkxNYdpGQyp5IAmca/3cJcA8S7bOX+Dc0v2X/iZZrRzQmQokNud1CIhza1qzz43KvustGYNQoIWOQ1gu/1zwAgNVlUiVtL0CSriusi7lQzhsc+VN2Xk6eYQ8d6aJiI2bxPXpXhSnmzaH6NlqGE0tg+LViNenRRGQF9jAh/AFWMy56IxNdbRG1cIB2iTF5hAMM/ktxxqiKhIEjnGoiClIdQOrH+pySclTy0zJJhKtj+UeGhuNkayYhZfCRU9rprWOKm6Orkkc7cFi2YulFW6/751QIrGomw/MrPdDyr2P9ACc+shGD7xNwyb/dA3adXFDlXj2PjWQwuC3HLbYfB45t/WUyAlTHNjdrLy0k592fKl3ofecyeYNWbUFdxpa5BYGtOo5zim6nKg==-----END CERTIFICATE-----"
+                }
+            ],
+            "command_set": [
+                {
+                    "name": "ORC_FastFind",
+                    "start": "2025-03-25T13:32:34Z",
+                    "end": "2025-03-25T13:40:39Z",
+                    "statistics": {
+                        "io_counters": {
+                            "read_operation": 59755,
+                            "read_transfer": 2350717208,
+                            "write_operation": 816,
+                            "write_transfer": 661469,
+                            "other_operation": 767,
+                            "other_transfer": 1217832
+                        },
+                        "process": 1,
+                        "process_memory_peak": 91443200,
+                        "job_memory_peak": 0,
+                        "active_proces": 0,
+                        "terminated_process": 0,
+                        "page_fault": 1922408
+                    },
+                    "archive": {
+                        "name": "ORC_WorkStation_WXPSP2_FastFind.7z.p7b",
+                        "sha1": "750EAFEAB2FF8789E4000E532BE7926EDB63FADB",
+                        "size": 19693,
+                        "input_type": "live",
+                        "files": [
+                            {
+                                "name": "Config.xml",
+                                "size": 39977
+                            },
+                            {
+                                "name": "FastFind.dev.log",
+                                "size": 83124
+                            },
+                            {
+                                "name": "FastFind.log",
+                                "size": 41044
+                            },
+                            {
+                                "name": "FastFind_result.xml",
+                                "size": 102257
+                            },
+                            {
+                                "name": "FastFind_result_cli_config.xml",
+                                "size": 3610
+                            }
+                        ]
+                    },
+                    "commands": [
+                        {
+                            "name": "FastFind",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" FastFind /config=res:#FastFind_config.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\FastFind_result.xml\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\FastFind.dev.log\",level=info,backtrace=error",
+                            "tool": "FastFind",
+                            "start": "2025-03-25T13:32:36Z",
+                            "end": "2025-03-25T13:40:39Z",
+                            "exit_code": 1,
+                            "pid": 260,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 32,
+                            "kernel_time": 45,
+                            "io_counters": {
+                                "read_operation": 59755,
+                                "read_transfer": 2350717208,
+                                "write_operation": 816,
+                                "write_transfer": 661469,
+                                "other_operation": 767,
+                                "other_transfer": 1217832
+                            },
+                            "output": [
+                                {
+                                    "name": "FastFind_result.xml",
+                                    "source": "file",
+                                    "size": 102257
+                                },
+                                {
+                                    "name": "FastFind.log",
+                                    "source": "stdout_stderr",
+                                    "size": 41044
+                                },
+                                {
+                                    "name": "FastFind.dev.log",
+                                    "source": "file",
+                                    "size": 83124
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "ORC_General",
+                    "start": "2025-03-25T13:40:39Z",
+                    "end": "2025-03-25T13:52:27Z",
+                    "statistics": {
+                        "io_counters": {
+                            "read_operation": 37887,
+                            "read_transfer": 9511370616,
+                            "write_operation": 9334,
+                            "write_transfer": 23603361,
+                            "other_operation": 171506,
+                            "other_transfer": 3334633
+                        },
+                        "process": 25,
+                        "process_memory_peak": 473665536,
+                        "job_memory_peak": 0,
+                        "active_proces": 0,
+                        "terminated_process": 0,
+                        "page_fault": 13699909
+                    },
+                    "archive": {
+                        "name": "ORC_WorkStation_WXPSP2_General.7z.p7b",
+                        "sha1": "89B00CCB83DA47417D54DD2E412A9FC0AD9BCCAF",
+                        "size": 6318835,
+                        "input_type": "live",
+                        "files": [
+                            {
+                                "name": "NTFSInfo_quick.dev.log",
+                                "size": 20190
+                            },
+                            {
+                                "name": "NTFSInfo_quick.log",
+                                "size": 4415
+                            },
+                            {
+                                "name": "NTFSInfo_quick_cli_config.xml",
+                                "size": 341
+                            },
+                            {
+                                "name": "USNInfo.7z",
+                                "size": 323
+                            },
+                            {
+                                "name": "USNInfo.dev.log",
+                                "size": 14575
+                            },
+                            {
+                                "name": "USNInfo.log",
+                                "size": 1574
+                            },
+                            {
+                                "name": "arp_cache.txt",
+                                "size": 199
+                            },
+                            {
+                                "name": "autoruns.csv",
+                                "size": 442408
+                            },
+                            {
+                                "name": "autoruns.log",
+                                "size": 140
+                            },
+                            {
+                                "name": "BootCode.7z",
+                                "size": 4907
+                            },
+                            {
+                                "name": "BootCode.dev.log",
+                                "size": 3811
+                            },
+                            {
+                                "name": "BootCode.log",
+                                "size": 1735
+                            },
+                            {
+                                "name": "dns_cache.txt",
+                                "size": 715
+                            },
+                            {
+                                "name": "Enumlocs.txt",
+                                "size": 1450
+                            },
+                            {
+                                "name": "FatInfo_detail.7z",
+                                "size": 204
+                            },
+                            {
+                                "name": "FatInfo_detail.dev.log",
+                                "size": 20508
+                            },
+                            {
+                                "name": "FatInfo_detail.log",
+                                "size": 4379
+                            },
+                            {
+                                "name": "FatInfo_detail_cli_config.xml",
+                                "size": 367
+                            },
+                            {
+                                "name": "GetBrowsers_History.7z",
+                                "size": 2171
+                            },
+                            {
+                                "name": "GetBrowsers_History.dev.log",
+                                "size": 33418
+                            },
+                            {
+                                "name": "GetBrowsers_History.log",
+                                "size": 14794
+                            },
+                            {
+                                "name": "GetBrowsers_History_cli_config.xml",
+                                "size": 6203
+                            },
+                            {
+                                "name": "GetObjInfo.csv",
+                                "size": 99845
+                            },
+                            {
+                                "name": "GetObjInfo.dev.log",
+                                "size": 2090
+                            },
+                            {
+                                "name": "GetObjInfo.log",
+                                "size": 1069
+                            },
+                            {
+                                "name": "GetSamples.7z",
+                                "size": 208223
+                            },
+                            {
+                                "name": "GetSamples.dev.log",
+                                "size": 114629
+                            },
+                            {
+                                "name": "GetSamples.log",
+                                "size": 10107
+                            },
+                            {
+                                "name": "GetSamples_autoruns.xml",
+                                "size": 663008
+                            },
+                            {
+                                "name": "GetSamples_cli_config.xml",
+                                "size": 231
+                            },
+                            {
+                                "name": "GetSamples_getthis.xml",
+                                "size": 2360
+                            },
+                            {
+                                "name": "GetSamples_sampleinfo.csv",
+                                "size": 45643
+                            },
+                            {
+                                "name": "GetSamples_timeline.csv",
+                                "size": 85753
+                            },
+                            {
+                                "name": "GetThis_Additional.7z",
+                                "size": 1484689
+                            },
+                            {
+                                "name": "GetThis_Additional.dev.log",
+                                "size": 82634
+                            },
+                            {
+                                "name": "GetThis_Additional.log",
+                                "size": 45505
+                            },
+                            {
+                                "name": "GetThis_Additional_cli_config.xml",
+                                "size": 20671
+                            },
+                            {
+                                "name": "GetThis_Default.7z",
+                                "size": 3343937
+                            },
+                            {
+                                "name": "GetThis_Default.dev.log",
+                                "size": 48795
+                            },
+                            {
+                                "name": "GetThis_Default.log",
+                                "size": 24921
+                            },
+                            {
+                                "name": "GetThis_Default_cli_config.xml",
+                                "size": 5627
+                            },
+                            {
+                                "name": "handle.txt",
+                                "size": 189225
+                            },
+                            {
+                                "name": "Listdlls.txt",
+                                "size": 40263
+                            },
+                            {
+                                "name": "netstat.txt",
+                                "size": 1383
+                            },
+                            {
+                                "name": "NTFSInfo_details.7z",
+                                "size": 729874
+                            },
+                            {
+                                "name": "NTFSInfo_details.dev.log",
+                                "size": 33774
+                            },
+                            {
+                                "name": "NTFSInfo_details.log",
+                                "size": 8844
+                            },
+                            {
+                                "name": "NTFSInfo_details_cli_config.xml",
+                                "size": 553
+                            },
+                            {
+                                "name": "NTFSInfo_i30Info_details.7z",
+                                "size": 223186
+                            },
+                            {
+                                "name": "NTFSInfo_SecDesc_details.7z",
+                                "size": 5489
+                            },
+                            {
+                                "name": "NTFSUtil.dev.log",
+                                "size": 14062
+                            },
+                            {
+                                "name": "Residents.7z",
+                                "size": 131659
+                            },
+                            {
+                                "name": "Residents.dev.log",
+                                "size": 98984
+                            },
+                            {
+                                "name": "Residents_cli_config.xml",
+                                "size": 333
+                            },
+                            {
+                                "name": "routes.txt",
+                                "size": 1169
+                            },
+                            {
+                                "name": "Systeminfo.csv",
+                                "size": 1469
+                            },
+                            {
+                                "name": "Tcpvcon.txt",
+                                "size": 758
+                            },
+                            {
+                                "name": "VSS_list.csv",
+                                "size": 65
+                            },
+                            {
+                                "name": "VSS_list.dev.log",
+                                "size": 13409
+                            },
+                            {
+                                "name": "VSS_list.log",
+                                "size": 976
+                            },
+                            {
+                                "name": "Config.xml",
+                                "size": 39977
+                            }
+                        ]
+                    },
+                    "commands": [
+                        {
+                            "name": "GetResidents",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" GetThis C: /config=res:#GetResidents.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\Residents.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\Residents.dev.log\",level=info,backtrace=error",
+                            "tool": "GetThis",
+                            "start": "2025-03-25T13:43:28Z",
+                            "end": "2025-03-25T13:43:45Z",
+                            "exit_code": 0,
+                            "pid": 1008,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 363,
+                                "read_transfer": 11630642,
+                                "write_operation": 805,
+                                "write_transfer": 417353,
+                                "other_operation": 526,
+                                "other_transfer": 12410
+                            },
+                            "output": [
+                                {
+                                    "name": "Residents.7z",
+                                    "source": "file",
+                                    "size": 131659
+                                },
+                                {
+                                    "name": "Residents.log",
+                                    "source": "stderr"
+                                },
+                                {
+                                    "name": "Residents.dev.log",
+                                    "source": "file",
+                                    "size": 98984
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Flashback",
+                            "command_line": "\"C:\\WINDOWS\\TEMP\\WorkingTemp\\flashback.exe\" -v -d \"C:\\WINDOWS\\TEMP\\WorkingTemp\\Flashback_results\"",
+                            "start": "2025-03-25T13:40:43Z",
+                            "end": "2025-03-25T13:41:22Z",
+                            "exit_code": 3221225785,
+                            "pid": 220,
+                            "sha1": "B1C6196434371C119E3DB885026B67B0D3A047CE",
+                            "origin": {
+                                "friendly_name": "flashback.exe",
+                                "type": "resource",
+                                "location": {
+                                    "name": "7z:#Tools|flashback.exe"
+                                }
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 0,
+                                "read_transfer": 0,
+                                "write_operation": 0,
+                                "write_transfer": 0,
+                                "other_operation": 19,
+                                "other_transfer": 82
+                            },
+                            "output": [
+                                {
+                                    "name": "Flashback_results",
+                                    "source": "directory"
+                                },
+                                {
+                                    "name": "flashback.log",
+                                    "source": "stdout_stderr"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetThis_Additional",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" GetThis * /shadows=oldest,mid,newest /config=res:#GetThis_Additional.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetThis_Additional.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetThis_Additional.dev.log\",level=info,backtrace=error",
+                            "tool": "GetThis",
+                            "start": "2025-03-25T13:42:29Z",
+                            "end": "2025-03-25T13:43:12Z",
+                            "exit_code": 0,
+                            "pid": 172,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 7,
+                            "kernel_time": 7,
+                            "io_counters": {
+                                "read_operation": 558,
+                                "read_transfer": 28246704,
+                                "write_operation": 817,
+                                "write_transfer": 1735288,
+                                "other_operation": 690,
+                                "other_transfer": 94896
+                            },
+                            "output": [
+                                {
+                                    "name": "GetThis_Additional.7z",
+                                    "source": "file",
+                                    "size": 1484689
+                                },
+                                {
+                                    "name": "GetThis_Additional.log",
+                                    "source": "stdout_stderr",
+                                    "size": 45505
+                                },
+                                {
+                                    "name": "GetThis_Additional.dev.log",
+                                    "source": "file",
+                                    "size": 82634
+                                }
+                            ]
+                        },
+                        {
+                            "name": "USNInfo",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" USNInfo * /shadows=oldest,mid,newest /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\USNInfo.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\USNInfo.dev.log\",level=info,backtrace=error",
+                            "tool": "USNInfo",
+                            "start": "2025-03-25T13:40:46Z",
+                            "end": "2025-03-25T13:41:30Z",
+                            "exit_code": 0,
+                            "pid": 1900,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 220,
+                                "read_transfer": 10879993,
+                                "write_operation": 47,
+                                "write_transfer": 139033,
+                                "other_operation": 686,
+                                "other_transfer": 84904
+                            },
+                            "output": [
+                                {
+                                    "name": "USNInfo.7z",
+                                    "source": "file",
+                                    "size": 323
+                                },
+                                {
+                                    "name": "USNInfo.log",
+                                    "source": "stdout_stderr",
+                                    "size": 1574
+                                },
+                                {
+                                    "name": "USNInfo.dev.log",
+                                    "source": "file",
+                                    "size": 14575
+                                }
+                            ]
+                        },
+                        {
+                            "name": "NTFSInfo_Quick_Shadows",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" NTFSInfo * /exclude=* /shadows=oldest,mid,newest /config=res:#NTFSInfo_Quick.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_quick.7z\" /i30info=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_i30Info_quick.7z\" /SecDescr=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_SecDesc_quick.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_quick.dev.log\",level=info,backtrace=error",
+                            "tool": "NTFSInfo",
+                            "start": "2025-03-25T13:41:22Z",
+                            "end": "2025-03-25T13:41:26Z",
+                            "exit_code": 0,
+                            "pid": 1032,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 16,
+                                "read_transfer": 29588,
+                                "write_operation": 106,
+                                "write_transfer": 147065,
+                                "other_operation": 678,
+                                "other_transfer": 81676
+                            },
+                            "output": [
+                                {
+                                    "name": "NTFSInfo_quick.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_i30Info_quick.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_SecDesc_quick.7z",
+                                    "source": "file"
+                                },
+                                {
+                                    "name": "NTFSInfo_quick.log",
+                                    "source": "stdout_stderr",
+                                    "size": 4415
+                                },
+                                {
+                                    "name": "NTFSInfo_quick.dev.log",
+                                    "source": "file",
+                                    "size": 20190
+                                }
+                            ]
+                        },
+                        {
+                            "name": "NTFSInfo_Details_Current",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" NTFSInfo * /config=res:#NTFSInfo_Details.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_details.7z\" /i30info=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_i30Info_details.7z\" /SecDescr=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_SecDesc_details.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSInfo_details.dev.log\",level=info,backtrace=error",
+                            "tool": "NTFSInfo",
+                            "start": "2025-03-25T13:41:26Z",
+                            "end": "2025-03-25T13:52:26Z",
+                            "exit_code": 0,
+                            "pid": 2020,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 147,
+                            "kernel_time": 64,
+                            "io_counters": {
+                                "read_operation": 32274,
+                                "read_transfer": 8471900512,
+                                "write_operation": 5618,
+                                "write_transfer": 13301752,
+                                "other_operation": 61437,
+                                "other_transfer": 664370
+                            },
+                            "output": [
+                                {
+                                    "name": "NTFSInfo_details.7z",
+                                    "source": "file",
+                                    "size": 729874
+                                },
+                                {
+                                    "name": "NTFSInfo_i30Info_details.7z",
+                                    "source": "file",
+                                    "size": 223186
+                                },
+                                {
+                                    "name": "NTFSInfo_SecDesc_details.7z",
+                                    "source": "file",
+                                    "size": 5489
+                                },
+                                {
+                                    "name": "NTFSInfo_details.log",
+                                    "source": "stdout_stderr",
+                                    "size": 8844
+                                },
+                                {
+                                    "name": "NTFSInfo_details.dev.log",
+                                    "source": "file",
+                                    "size": 33774
+                                }
+                            ]
+                        },
+                        {
+                            "name": "FatInfo",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" FatInfo * /config=res:#FatInfo_Details.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\FatInfo_detail.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\FatInfo_detail.dev.log\",level=info,backtrace=error",
+                            "tool": "FatInfo",
+                            "start": "2025-03-25T13:41:31Z",
+                            "end": "2025-03-25T13:41:37Z",
+                            "exit_code": 0,
+                            "pid": 1820,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 17,
+                                "read_transfer": 29230,
+                                "write_operation": 115,
+                                "write_transfer": 147621,
+                                "other_operation": 686,
+                                "other_transfer": 81910
+                            },
+                            "output": [
+                                {
+                                    "name": "FatInfo_detail.7z",
+                                    "source": "file",
+                                    "size": 204
+                                },
+                                {
+                                    "name": "FatInfo_detail.log",
+                                    "source": "stdout_stderr",
+                                    "size": 4379
+                                },
+                                {
+                                    "name": "FatInfo_detail.dev.log",
+                                    "source": "file",
+                                    "size": 20508
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetBrowsers_History",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" GetThis * /shadows=oldest,mid,newest /config=res:#GetBrowsers_History.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetBrowsers_History.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetBrowsers_History.dev.log\",level=info,backtrace=error",
+                            "tool": "GetThis",
+                            "start": "2025-03-25T13:43:12Z",
+                            "end": "2025-03-25T13:43:28Z",
+                            "exit_code": 0,
+                            "pid": 284,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 3,
+                            "io_counters": {
+                                "read_operation": 306,
+                                "read_transfer": 11627152,
+                                "write_operation": 252,
+                                "write_transfer": 172843,
+                                "other_operation": 688,
+                                "other_transfer": 95496
+                            },
+                            "output": [
+                                {
+                                    "name": "GetBrowsers_History.7z",
+                                    "source": "file",
+                                    "size": 2171
+                                },
+                                {
+                                    "name": "GetBrowsers_History.log",
+                                    "source": "stdout_stderr",
+                                    "size": 14794
+                                },
+                                {
+                                    "name": "GetBrowsers_History.dev.log",
+                                    "source": "file",
+                                    "size": 33418
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetThis_Default",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" GetThis * /shadows=oldest,mid,newest /config=res:#GetThis_Default.xml /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetThis_Default.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetThis_Default.dev.log\",level=info,backtrace=error",
+                            "tool": "GetThis",
+                            "start": "2025-03-25T13:41:37Z",
+                            "end": "2025-03-25T13:42:29Z",
+                            "exit_code": 0,
+                            "pid": 1844,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 17,
+                            "kernel_time": 1,
+                            "io_counters": {
+                                "read_operation": 515,
+                                "read_transfer": 42948784,
+                                "write_operation": 432,
+                                "write_transfer": 3540113,
+                                "other_operation": 690,
+                                "other_transfer": 88840
+                            },
+                            "output": [
+                                {
+                                    "name": "GetThis_Default.7z",
+                                    "source": "file",
+                                    "size": 3343937
+                                },
+                                {
+                                    "name": "GetThis_Default.log",
+                                    "source": "stdout_stderr",
+                                    "size": 24921
+                                },
+                                {
+                                    "name": "GetThis_Default.dev.log",
+                                    "source": "file",
+                                    "size": 48795
+                                }
+                            ]
+                        },
+                        {
+                            "name": "SystemInfo",
+                            "command_line": "\"C:\\WINDOWS\\System32\\systeminfo.exe\" /FO csv",
+                            "start": "2025-03-25T13:43:45Z",
+                            "end": "2025-03-25T13:43:47Z",
+                            "exit_code": 0,
+                            "pid": 1804,
+                            "sha1": "C871F1124AD0BBDE1F771485C316CBE28809BA97",
+                            "origin": {
+                                "friendly_name": "systeminfo.exe",
+                                "type": "file"
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 2,
+                                "read_transfer": 136,
+                                "write_operation": 194,
+                                "write_transfer": 1613,
+                                "other_operation": 155,
+                                "other_transfer": 2708
+                            },
+                            "output": [
+                                {
+                                    "name": "Systeminfo.csv",
+                                    "source": "stdout_stderr",
+                                    "size": 1469
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetBootCode",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" GetSectors /LegacyBootCode /UefiFull /SlackSpace /log:console,level=critical,backtrace=critical /Out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\BootCode.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\BootCode.dev.log\",level=info,backtrace=error",
+                            "tool": "GetSectors",
+                            "start": "2025-03-25T13:46:34Z",
+                            "end": "2025-03-25T13:46:38Z",
+                            "exit_code": 0,
+                            "pid": 720,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 102,
+                                "read_transfer": 5605754,
+                                "write_operation": 60,
+                                "write_transfer": 132765,
+                                "other_operation": 551,
+                                "other_transfer": 125843
+                            },
+                            "output": [
+                                {
+                                    "name": "BootCode.7z",
+                                    "source": "file",
+                                    "size": 4907
+                                },
+                                {
+                                    "name": "BootCode.log",
+                                    "source": "stdout_stderr",
+                                    "size": 1735
+                                },
+                                {
+                                    "name": "BootCode.dev.log",
+                                    "source": "file",
+                                    "size": 3811
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Autoruns",
+                            "command_line": "\"C:\\WINDOWS\\TEMP\\WorkingTemp\\autorunsc.exe\" -accepteula -c -h -s -t -a * *",
+                            "start": "2025-03-25T13:43:48Z",
+                            "end": "2025-03-25T13:46:34Z",
+                            "exit_code": 0,
+                            "pid": 1108,
+                            "sha1": "319669B38A5C875A55AFB5DCB6220F6EF47C3AA4",
+                            "origin": {
+                                "friendly_name": "autorunsc.exe",
+                                "type": "resource",
+                                "location": {
+                                    "name": "7z:#Tools|autorunsc.exe"
+                                }
+                            },
+                            "user_time": 18,
+                            "kernel_time": 7,
+                            "io_counters": {
+                                "read_operation": 781,
+                                "read_transfer": 344024,
+                                "write_operation": 121,
+                                "write_transfer": 443412,
+                                "other_operation": 53612,
+                                "other_transfer": 868898
+                            },
+                            "output": [
+                                {
+                                    "name": "autoruns.csv",
+                                    "source": "stdout",
+                                    "size": 442408
+                                },
+                                {
+                                    "name": "autoruns.log",
+                                    "source": "stderr",
+                                    "size": 140
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Handle",
+                            "command_line": "\"C:\\WINDOWS\\TEMP\\WorkingTemp\\handle.exe\" /accepteula /a",
+                            "start": "2025-03-25T13:46:38Z",
+                            "end": "2025-03-25T13:46:39Z",
+                            "exit_code": 0,
+                            "pid": 640,
+                            "sha1": "5F08CC1DFCBD277F607E01BBBFBB34996FEBD937",
+                            "origin": {
+                                "friendly_name": "handle.exe",
+                                "type": "resource",
+                                "location": {
+                                    "name": "7z:#Tools|handle.exe"
+                                }
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 81,
+                                "read_transfer": 5508,
+                                "write_operation": 128,
+                                "write_transfer": 224217,
+                                "other_operation": 5217,
+                                "other_transfer": 247248
+                            },
+                            "output": [
+                                {
+                                    "name": "handle.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 189225
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetObjInfo",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" ObjInfo /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetObjInfo.csv\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetObjInfo.dev.log\",level=info,backtrace=error",
+                            "tool": "ObjInfo",
+                            "start": "2025-03-25T13:46:39Z",
+                            "end": "2025-03-25T13:46:41Z",
+                            "exit_code": 0,
+                            "pid": 344,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 5,
+                                "read_transfer": 16236,
+                                "write_operation": 37,
+                                "write_transfer": 225148,
+                                "other_operation": 280,
+                                "other_transfer": 11930
+                            },
+                            "output": [
+                                {
+                                    "name": "GetObjInfo.csv",
+                                    "source": "file",
+                                    "size": 99845
+                                },
+                                {
+                                    "name": "GetObjInfo.log",
+                                    "source": "stdout_stderr",
+                                    "size": 1069
+                                },
+                                {
+                                    "name": "GetObjInfo.dev.log",
+                                    "source": "file",
+                                    "size": 2090
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Route",
+                            "command_line": "\"C:\\WINDOWS\\System32\\route.exe\" PRINT",
+                            "start": "2025-03-25T13:46:41Z",
+                            "end": "2025-03-25T13:46:41Z",
+                            "exit_code": 0,
+                            "pid": 368,
+                            "sha1": "31282AD39FD1A06A4A4DE7462EC48B0366308832",
+                            "origin": {
+                                "friendly_name": "route.exe",
+                                "type": "file"
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 0,
+                                "read_transfer": 0,
+                                "write_operation": 1,
+                                "write_transfer": 1169,
+                                "other_operation": 157,
+                                "other_transfer": 3752
+                            },
+                            "output": [
+                                {
+                                    "name": "routes.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 1169
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Dns_cache",
+                            "command_line": "\"C:\\WINDOWS\\System32\\ipconfig.exe\" /displaydns",
+                            "start": "2025-03-25T13:46:42Z",
+                            "end": "2025-03-25T13:46:42Z",
+                            "exit_code": 0,
+                            "pid": 348,
+                            "sha1": "2B804D6E9263952DABB47F951B7AA7CB753583FE",
+                            "origin": {
+                                "friendly_name": "ipconfig.exe",
+                                "type": "file"
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 3,
+                                "read_transfer": 19302,
+                                "write_operation": 3,
+                                "write_transfer": 859,
+                                "other_operation": 633,
+                                "other_transfer": 87084
+                            },
+                            "output": [
+                                {
+                                    "name": "dns_cache.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 715
+                                }
+                            ]
+                        },
+                        {
+                            "name": "GetSamples",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" GetSamples /config=res:#GetSamples.xml /log:console,level=critical,backtrace=critical /getthisconfig=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetSamples_getthis.xml\" /autoruns=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetSamples_autoruns.xml\" /sampleinfo=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetSamples_sampleinfo.csv\" /timeline=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetSamples_timeline.csv\" /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetSamples.7z\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\GetSamples.dev.log\",level=info,backtrace=error",
+                            "tool": "GetSamples",
+                            "start": "2025-03-25T13:46:43Z",
+                            "end": "2025-03-25T13:48:40Z",
+                            "exit_code": 0,
+                            "pid": 1444,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 19,
+                            "kernel_time": 6,
+                            "io_counters": {
+                                "read_operation": 1142,
+                                "read_transfer": 909742485,
+                                "write_operation": 128,
+                                "write_transfer": 1628202,
+                                "other_operation": 6669,
+                                "other_transfer": 90934
+                            },
+                            "output": [
+                                {
+                                    "name": "GetSamples_getthis.xml",
+                                    "source": "file",
+                                    "size": 2360
+                                },
+                                {
+                                    "name": "GetSamples_autoruns.xml",
+                                    "source": "file",
+                                    "size": 663008
+                                },
+                                {
+                                    "name": "GetSamples_sampleinfo.csv",
+                                    "source": "file",
+                                    "size": 45643
+                                },
+                                {
+                                    "name": "GetSamples_timeline.csv",
+                                    "source": "file",
+                                    "size": 85753
+                                },
+                                {
+                                    "name": "GetSamples.7z",
+                                    "source": "file",
+                                    "size": 208223
+                                },
+                                {
+                                    "name": "GetSamples.log",
+                                    "source": "stdout_stderr",
+                                    "size": 10107
+                                },
+                                {
+                                    "name": "GetSamples.dev.log",
+                                    "source": "file",
+                                    "size": 114629
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Tcpvcon",
+                            "command_line": "\"C:\\WINDOWS\\TEMP\\WorkingTemp\\Tcpvcon.exe\" /accepteula -a -n -c",
+                            "start": "2025-03-25T13:46:42Z",
+                            "end": "2025-03-25T13:46:43Z",
+                            "exit_code": 0,
+                            "pid": 864,
+                            "sha1": "4532822AE9CC083115C32E6AA9C4E08C3D673575",
+                            "origin": {
+                                "friendly_name": "Tcpvcon.exe",
+                                "type": "resource",
+                                "location": {
+                                    "name": "7z:#Tools|Tcpvcon.exe"
+                                }
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 36,
+                                "read_transfer": 98824,
+                                "write_operation": 3,
+                                "write_transfer": 830,
+                                "other_operation": 154,
+                                "other_transfer": 4060
+                            },
+                            "output": [
+                                {
+                                    "name": "Tcpvcon.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 758
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Listdlls",
+                            "command_line": "\"C:\\WINDOWS\\TEMP\\WorkingTemp\\Listdlls.exe\" /accepteula",
+                            "start": "2025-03-25T13:48:40Z",
+                            "end": "2025-03-25T13:48:41Z",
+                            "exit_code": 0,
+                            "pid": 1000,
+                            "sha1": "CF1D18CF4EE232052DFD7F1A6100E86D804E1B0B",
+                            "origin": {
+                                "friendly_name": "Listdlls.exe",
+                                "type": "resource",
+                                "location": {
+                                    "name": "7z:#Tools|Listdlls.exe"
+                                }
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 853,
+                                "read_transfer": 3489860,
+                                "write_operation": 11,
+                                "write_transfer": 40335,
+                                "other_operation": 7102,
+                                "other_transfer": 556
+                            },
+                            "output": [
+                                {
+                                    "name": "Listdlls.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 40263
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Netstat",
+                            "command_line": "\"C:\\WINDOWS\\System32\\netstat.exe\" -a -n -o",
+                            "start": "2025-03-25T13:46:43Z",
+                            "end": "2025-03-25T13:46:43Z",
+                            "exit_code": 0,
+                            "pid": 660,
+                            "sha1": "1519393638939F583A5EAF9921D1CD9B930A0453",
+                            "origin": {
+                                "friendly_name": "netstat.exe",
+                                "type": "file"
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 0,
+                                "read_transfer": 0,
+                                "write_operation": 1,
+                                "write_transfer": 1383,
+                                "other_operation": 167,
+                                "other_transfer": 3684
+                            },
+                            "output": [
+                                {
+                                    "name": "netstat.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 1383
+                                }
+                            ]
+                        },
+                        {
+                            "name": "VSS_list",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" NTFSUtil /VSS /log:console,level=critical,backtrace=critical /out=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\VSS_list.csv\" /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\VSS_list.dev.log\",level=info,backtrace=error",
+                            "tool": "NTFSUtil",
+                            "start": "2025-03-25T13:48:41Z",
+                            "end": "2025-03-25T13:48:46Z",
+                            "exit_code": 0,
+                            "pid": 1196,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 19,
+                                "read_transfer": 21676,
+                                "write_operation": 42,
+                                "write_transfer": 136910,
+                                "other_operation": 654,
+                                "other_transfer": 156700
+                            },
+                            "output": [
+                                {
+                                    "name": "VSS_list.csv",
+                                    "source": "file",
+                                    "size": 65
+                                },
+                                {
+                                    "name": "VSS_list.log",
+                                    "source": "stdout_stderr",
+                                    "size": 976
+                                },
+                                {
+                                    "name": "VSS_list.dev.log",
+                                    "source": "file",
+                                    "size": 13409
+                                }
+                            ]
+                        },
+                        {
+                            "name": "EnumLocs",
+                            "command_line": "\"\\\\10.0.0.3\\share\\orc\\test_10.2.7-003\\Orc.exe\" NTFSUtil /enumlocs /log:console,level=critical,backtrace=critical /log:file,output=\"C:\\WINDOWS\\TEMP\\WorkingTemp\\NTFSUtil.dev.log\",level=info,backtrace=error",
+                            "tool": "NTFSUtil",
+                            "start": "2025-03-25T13:48:46Z",
+                            "end": "2025-03-25T13:48:51Z",
+                            "exit_code": 0,
+                            "pid": 1252,
+                            "sha1": "76A13480F5017816907A69972D7D014F0B3F2CF6",
+                            "origin": {
+                                "friendly_name": "<self>",
+                                "type": "file"
+                            },
+                            "user_time": 1,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 15,
+                                "read_transfer": 20878,
+                                "write_operation": 46,
+                                "write_transfer": 137972,
+                                "other_operation": 483,
+                                "other_transfer": 7736
+                            },
+                            "output": [
+                                {
+                                    "name": "Enumlocs.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 1450
+                                },
+                                {
+                                    "name": "NTFSUtil.dev.log",
+                                    "source": "file",
+                                    "size": 14062
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Arp_cache",
+                            "command_line": "\"C:\\WINDOWS\\System32\\arp.exe\" -a",
+                            "start": "2025-03-25T13:48:51Z",
+                            "end": "2025-03-25T13:48:51Z",
+                            "exit_code": 0,
+                            "pid": 976,
+                            "sha1": "4A22E401AD5ADB7B3DE8F819E86D8461D764D195",
+                            "origin": {
+                                "friendly_name": "arp.exe",
+                                "type": "file"
+                            },
+                            "user_time": 0,
+                            "kernel_time": 0,
+                            "io_counters": {
+                                "read_operation": 0,
+                                "read_transfer": 0,
+                                "write_operation": 1,
+                                "write_transfer": 199,
+                                "other_operation": 147,
+                                "other_transfer": 4148
+                            },
+                            "output": [
+                                {
+                                    "name": "arp_cache.txt",
+                                    "source": "stdout_stderr",
+                                    "size": 199
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
