@@ -21,7 +21,7 @@ This software is currently in **beta**. While functional and actively developed,
 
 ## Documentation
 
-The full documentation is available on the website : https://dfir-oger.github.io
+The full documentation is available on the website : https://anssi-fr.github.io/dfir-ogre-documentation/
 
 ## Installation
 
