@@ -2,7 +2,7 @@
 FROM python:3.13-trixie AS builder
 
 RUN apt update && \
-    apt install -y gcc python3-pip python3.13-venv git && \
+    apt install -y gcc python3-pip python3.13-venv git uv && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 RUN python3 -m venv /app/venv
@@ -13,7 +13,7 @@ RUN git clone https://github.com/ANSSI-FR/dfir-ogre-plugin-windows.git
 RUN git clone https://github.com/ANSSI-FR/dfir-ogre.git
 
 RUN umask 022 && \
-    pip install /ogre/dfir-ogre
+    VIRTUAL_ENV=/app/venv uv pip install /ogre/dfir-ogre
 
 #Final image using a slim debian
 FROM python:3.13-slim-trixie
