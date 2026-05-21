@@ -2,10 +2,11 @@
 FROM python:3.13-trixie AS builder
 
 RUN apt update && \
-    apt install -y gcc python3-pip python3.13-venv git uv && \
+    apt install -y gcc python3-pip python3.13-venv git && \
     curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 RUN python3 -m venv /app/venv
+RUN pip install uv
 ENV PATH="/app/venv/bin:/root/.cargo/bin:${PATH}"
 
 WORKDIR /ogre
