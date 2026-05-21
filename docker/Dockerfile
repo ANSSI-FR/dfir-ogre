@@ -18,7 +18,7 @@ RUN umask 022 && \
 #Final image using a slim debian
 FROM python:3.13-slim-trixie
 
-COPY --chmod=755 /ogre/dfir-ogre-plugin-windows/configuration /configuration
+COPY --chmod=755 --from=builder /ogre/dfir-ogre-plugin-windows/configuration /configuration
 COPY --chmod=755 --from=builder /app/venv /app/venv
 
 ENV PATH="/app/bin:$PATH"
