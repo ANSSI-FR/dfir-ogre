@@ -24,8 +24,8 @@ build-backend = "hatchling.build"
 packages = ["src/ogre"]
 
 [tool.uv.sources]
-dfir-ogre-common = { git = "git+ssh://git@github.com/ANSSI-FR/dfir-ogre-common.git" }
-dfir-ogre-plugin-windows = { git = "git+ssh://git@github.com/ANSSI-FR/dfir-ogre-plugin-windows.git" }
+dfir-ogre-common = { git = "https://github.com/ANSSI-FR/dfir-ogre-common.git" }
+dfir-ogre-plugin-windows = { git = "https://github.com/ANSSI-FR/dfir-ogre-plugin-windows.git" }
 
 [tool.pyright]
 reportUnknownVariableType = "none"
