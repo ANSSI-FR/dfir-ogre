@@ -105,6 +105,20 @@ mapping:
   #   output:
   #   - timeline
 
+  # Jumplist
+  - original_file_pattern: '.*\\AppData\\Roaming\\Microsoft\\Windows\\Recent\\.*Destinations-ms$'
+    plugin_file: $plugin_folder/lnk_batched.xml
+    mapping_label: jumplist
+    output:
+      - timeline
+
+  # i30
+  - archive_file_pattern: 'I30Info\.csv$'
+    plugin_file: $plugin_folder/i30_info.xml
+    mapping_label: i30info
+    output:
+      - timeline
+
   # Lnk
   - original_file_pattern: '.*\.lnk$'
     plugin_file: $plugin_folder/lnk_batched.xml
