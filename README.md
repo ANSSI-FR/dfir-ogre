@@ -40,8 +40,8 @@ The full documentation is available on the website : https://anssi-fr.github.i
 # Choose a location 
 mkdir -p ~/dfir-ogre && cd ~/dfir-ogre
 
-git clone git@github.com:ANSSI-FR/dfir-ogre-plugin-windows.git
-git clone git@github.com:ANSSI-FR/dfir-ogre.git
+git clone https://github.com/ANSSI-FR/dfir-ogre-plugin-windows.git
+git clone https://github.com/ANSSI-FR/dfir-ogre.git
 
 #create the virtual environment
 uv venv 
