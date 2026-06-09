@@ -170,7 +170,7 @@ mapping:
       - timeline
 
   # i30
-  - archive_file_pattern: 'I30Info\.csv$'
+  - archive_file_pattern: '.*I30Info.*\.csv$'
     plugin_file: $plugin_folder/i30_info.xml
     mapping_label: i30info
     output:
