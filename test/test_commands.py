@@ -238,6 +238,7 @@ class TestCommands(TestCase):
         self.assertEqual(
             output.output_folder, ".tmp/output/SampleOrc/text_output/presta/SuperIR"
         )
+        shutil.rmtree(temp_folder)
 
     def test_commands_timestamp_from_json(self):
         archive = """{
@@ -274,3 +275,4 @@ class TestCommands(TestCase):
         )
 
         self.assertEqual(output.base_file_name, "Void_BITS_jobs_20250904_221144")
+        shutil.rmtree(temp_folder)

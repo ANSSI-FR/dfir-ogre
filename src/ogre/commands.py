@@ -178,7 +178,8 @@ class PrepareRunResult:
     orc_id: str
     output_folder: str
     report_folder: str
-    extract_folders: list[str]
+    tmp_folder: str
+
 
 
 
@@ -225,7 +226,6 @@ def prepare_runs(
 
     errors = []
 
-    extract_folders: list[str] = []
 
     # replace wildcards in configuration.report_folder
     configuration.report_folder = configuration.report_folder.replace(
@@ -243,11 +243,6 @@ def prepare_runs(
     for archive in archives:
         # Create a deep copy of the configuration to avoid modifying the original
         conf = copy.deepcopy(configuration)
-
-        archive_name = Path(archive).stem
-
-        archive_extract_folder = os.path.join(conf.temp_folder,str(tmp_folder_id), archive_name)
-        extract_folders.append(archive_extract_folder)
 
         # Replace global wildcards in output configurations
         for output_conf in conf.output.values():
@@ -397,7 +392,7 @@ def prepare_runs(
         orc_outcome.id,
         configuration.output_folder,
         configuration.report_folder,
-        extract_folders,
+        configuration.temp_folder,
     )
 
 

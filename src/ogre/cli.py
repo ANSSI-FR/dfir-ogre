@@ -355,8 +355,8 @@ def parse_archive(
     with open(report_file, "w") as f:
         _ = f.write(json_str)
 
-    for extract_folder in prepared_runs.extract_folders:
-        shutil.rmtree(extract_folder, ignore_errors=True)
+    logger.info(f"Deleting temporary data: {prepared_runs.tmp_folder}")
+    shutil.rmtree(prepared_runs.tmp_folder, ignore_errors=True)
 
     return archive_report
 
