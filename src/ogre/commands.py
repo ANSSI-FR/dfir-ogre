@@ -239,7 +239,7 @@ def prepare_runs(
         configuration.report_folder = configuration.report_folder.replace(
             "/$dir_tree", configuration.dir_tree
         )
-    tmp_folder_id =  uuid.uuid4()
+
     for archive in archives:
         # Create a deep copy of the configuration to avoid modifying the original
         conf = copy.deepcopy(configuration)

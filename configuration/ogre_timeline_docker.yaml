@@ -6,6 +6,13 @@ temp_folder: /tmp/ogre_tmp/
 inner_archive_password: avproof
 plugin_folder: /configuration # configuration folder that contains XML plugins
 
+# Optionnal log configuration
+# log_file_name: dfir-ogre.log
+# log_file_path: ./
+# log_level: INFO # ERROR DEBUG
+# log_max_bytes: 5242880 #1024*1024*5 (5Mb)
+# log_backup_count: 3
+
 output:
   timeline:
     type: file

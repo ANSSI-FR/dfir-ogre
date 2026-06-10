@@ -1,6 +1,7 @@
 """
 Command line interface for DFIR‑OGRE.
 """
+from ogre.logging import init_logger
 
 import argparse
 import datetime
@@ -11,6 +12,7 @@ import os
 import shutil
 import sys
 import logging
+
 import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, is_dataclass
 from multiprocessing.managers import ListProxy, SyncManager
@@ -42,21 +44,7 @@ from .commands import (
     run_parser,
 )
 from .void_parser import VoidParser as VoidParser
-
-def init_logger():
-    """
-    Initialise the root logger for the CLI.
-
-    The logger is configured with a simple ``INFO``‑level format and
-    suppresses overly‑verbose messages from the ``evtx`` library, which
-    can to emit a large amount information.
-    """
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-    # evtx: disable logs up to ERROR (to much noise)
-    logging.getLogger("evtx").setLevel(logging.ERROR)
+from .logging import init_logger
 
 
 def main() -> None:
@@ -72,7 +60,7 @@ def main() -> None:
     * ``timeline`` – Same as ``orc`` but generates a a unique timeline CSV file.
     """
 
-    init_logger()
+
 
     parser = argparse.ArgumentParser(
         prog="ogre",
@@ -178,6 +166,7 @@ def display_plugin_list(args):
         optional ``case`` identifier. The ``case`` value is made available to
         the configuration as a global variable for Jinja‑style templating.
     """
+    init_logger()
     if args.case:
         global_vars = {"case": args.case}
     else:
@@ -212,6 +201,7 @@ def handle_orc_archive(args):
         ``case`` (optional case name),
         ``password`` (optional password for encrypted archives).
     """
+    init_logger(args.configuration)
     if args.case:
         global_vars = {"case": str(args.case)}
     else:
@@ -238,6 +228,7 @@ def handle_timeline(args):
         Must contain ``timeline_folder`` (output directory), ``configuration``,
         ``archive`` and optionally ``password``.
     """
+    init_logger(args.configuration)
     timeline_folder = args.timeline_folder
     if not timeline_folder:
         print("timeline_folder cannot be empty" )
@@ -542,7 +533,7 @@ def run_plugin(
 
 
     """
-
+    init_logger()
 
     output_name = Path(args.filename).stem
 
