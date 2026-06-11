@@ -286,7 +286,7 @@ def run_plugin(args: Any) -> None:
             try:
                 logger.info(f"Running '{plugin}', on file '{args.filename}' ")
                 result = parser_obj.parse(
-                    [BatchEntry(args.filename, run_config, Metadata("test"))],
+                    [BatchEntry(args.filename, run_config, metadata)],
                     plugin_file,
                 )
                 if result.last_error:
