@@ -2,12 +2,13 @@ from unittest import TestCase
 
 from dfir_ogre_common import PluginDescription
 
-from ogre.plugins import PluginDefinition, _register_plugin_classes, load_plugins
+from ogre.plugins import PluginDefinition, PluginRegistry
 
 
 class TestPlugins(TestCase):
-    def test_load_plugins_resolves_existing_parser(self):
-        plugins = load_plugins(["test"])
+    def test_registry_resolves_existing_parser(self):
+        registry = PluginRegistry.from_prefixes(["test"])
+        plugins = registry.definitions
 
         self.assertIn("Test", plugins)
         self.assertEqual(plugins["Test"], PluginDefinition("Test", "test", False))
@@ -21,5 +22,6 @@ class TestPlugins(TestCase):
             def description(self):
                 return PluginDescription("Duplicate", "second")
 
+        registry = PluginRegistry()
         with self.assertRaises(KeyError):
-            _register_plugin_classes({}, [FirstParser, SecondParser], batch=False)
+            registry.register_plugin_classes([FirstParser, SecondParser], batch=False)

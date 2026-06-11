@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import override
 
 if TYPE_CHECKING:
-    from .commands import RunResult
+    from .execution.parser_execution import RunResult
 
 logger = logging.getLogger(__name__)
 

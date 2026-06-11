@@ -2,14 +2,9 @@ import os
 import shutil
 from unittest import TestCase
 
-from ogre.commands import (
-    RunResult,
-    _finalize_run_result,
-    list_parsers,
-    load_config,
-    prepare_runs,
-    run_parser,
-)
+from ogre.config.loader import list_parsers, load_config
+from ogre.execution.parser_execution import RunResult, _finalize_run_result, run_parser
+from ogre.execution.run_preparation import prepare_runs
 
 from . import TEMP_FOLDER
 

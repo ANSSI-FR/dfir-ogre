@@ -5,7 +5,7 @@ from unittest import TestCase
 
 import yaml
 
-from ogre.configuration import (
+from ogre.config.models import (
     build_configuration,
     load_mapping,
     load_output_configuration,
@@ -98,9 +98,15 @@ output:
 
         res = load_mapping(copy.deepcopy(dict_conf), 10, True)
         self.assertEqual(dict_conf["config_file"], res.params["config_file"])
+        self.assertTrue(res.force_snake_case)
         original = copy.deepcopy(dict_conf)
         _ = load_mapping(dict_conf, 10, True)
         self.assertEqual(original, dict_conf)
+
+        snake_case_override = copy.deepcopy(dict_conf)
+        snake_case_override["force_snake_case"] = False
+        res = load_mapping(snake_case_override, 10, True)
+        self.assertFalse(res.force_snake_case)
 
         bad_copy = copy.deepcopy(dict_conf)
         bad_copy.pop("archive_file_pattern", None)

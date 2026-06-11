@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from ogre.template_vars import apply_dir_tree, replace_placeholders
+from ogre.config.template_vars import apply_dir_tree, replace_placeholders
 
 
 class TestTemplateVars(TestCase):

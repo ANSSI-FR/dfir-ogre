@@ -6,25 +6,20 @@ import json
 import logging
 import multiprocessing
 import os
+import queue
 import shutil
-import xml.etree.ElementTree as ET
 from collections.abc import Callable
-from multiprocessing.managers import ListProxy, SyncManager
 from pathlib import Path
 from typing import Any
 
 from dfir_ogre_common import BatchEntry, Metadata, OutputConfiguration, RunConfiguration
 
-from .commands import (
-    OgreRunConfiguration,
-    RunResult,
-    metadata_to_dict,
-    prepare_runs,
-    run_batch_parser,
-    run_parser,
-)
+from .execution.metadata_utils import metadata_to_dict
+from .execution.parser_execution import RunResult, run_batch_parser, run_parser
+from .execution.run_models import OgreRunConfiguration
+from .execution.run_preparation import prepare_runs
 from .logging import init_logger
-from .plugins import find_batched_parser, find_parser
+from .plugins import build_current_plugin_registry
 from .reporting import ArchiveReport, DataclassJSONEncoder, ReportBuilder
 
 logger = logging.getLogger(__name__)
@@ -55,13 +50,12 @@ def parse_archive(
         logger.error(f"{error}")
         report_builder.add_extract_error(error)
 
-    manager = multiprocessing.Manager()
     try:
         for run_configuration in prepared_runs.runs.map.values():
             if run_configuration.batch:
-                _run_batch_configuration(run_configuration, manager, report_builder)
+                _run_batch_configuration(run_configuration, report_builder)
             else:
-                _run_single_file_configuration(run_configuration, manager, report_builder)
+                _run_single_file_configuration(run_configuration, report_builder)
 
         archive_report = report_builder.get_report()
         json_str = json.dumps(archive_report, cls=DataclassJSONEncoder)
@@ -75,14 +69,12 @@ def parse_archive(
 
         return archive_report
     finally:
-        manager.shutdown()
         logger.info(f"Deleting temporary data: {prepared_runs.tmp_folder}")
         shutil.rmtree(prepared_runs.tmp_folder, ignore_errors=True)
 
 
 def _run_batch_configuration(
     run_configuration: OgreRunConfiguration,
-    manager: SyncManager,
     report_builder: ReportBuilder,
 ) -> None:
     try:
@@ -91,7 +83,7 @@ def _run_batch_configuration(
             f"'{run_configuration.parser}', for mapping label "
             f"'{run_configuration.mapping_label}' "
         )
-        result = run_batch_parser_with_timeout(run_configuration, manager)
+        result = run_batch_parser_with_timeout(run_configuration)
         report_builder.add_result(
             result, f"A batch of {len(run_configuration.batch_entries)} files"
         )
@@ -108,13 +100,12 @@ def _run_batch_configuration(
 
 def _run_single_file_configuration(
     run_configuration: OgreRunConfiguration,
-    manager: SyncManager,
     report_builder: ReportBuilder,
 ) -> None:
     for batch_entry in run_configuration.batch_entries:
         try:
             logger.info(f"Running '{run_configuration.parser}', on file '{batch_entry.file}' ")
-            result = run_parser_with_timeout(batch_entry, run_configuration, manager)
+            result = run_parser_with_timeout(batch_entry, run_configuration)
             report_builder.add_result(result, batch_entry.file)
         except Exception as e:
             error = (
@@ -129,27 +120,23 @@ def _run_single_file_configuration(
 def run_parser_with_timeout(
     batch_entry: BatchEntry,
     config: OgreRunConfiguration,
-    manager: SyncManager,
 ) -> RunResult:
     """Execute a parser in a separate process with a timeout."""
     return _run_process_with_timeout(
         run_parser_command,
         (batch_entry, config),
         config.timeout,
-        manager,
     )
 
 
 def run_batch_parser_with_timeout(
     config: OgreRunConfiguration,
-    manager: SyncManager,
 ) -> RunResult:
     """Execute a batched parser in a separate process with a timeout."""
     return _run_process_with_timeout(
         run_batch_parser_command,
         (config,),
         config.timeout,
-        manager,
     )
 
 
@@ -157,10 +144,9 @@ def _run_process_with_timeout(
     target: Callable[..., None],
     args: tuple[Any, ...],
     timeout: int | float,
-    manager: SyncManager,
 ) -> RunResult:
-    result = manager.list()
-    process = multiprocessing.Process(target=target, args=(*args, result))
+    result_queue = multiprocessing.Queue(maxsize=1)
+    process = multiprocessing.Process(target=target, args=(*args, result_queue))
     process.start()
     try:
         process.join(timeout)
@@ -168,13 +154,15 @@ def _run_process_with_timeout(
             _stop_process(process)
             raise Exception(f"parsing timed out, could not finish in {timeout} seconds")
 
-        if len(result) == 0:
-            raise Exception("The parsing process crashed and did not produce a report")
-
-        return result.pop()
+        try:
+            return result_queue.get(timeout=1)
+        except queue.Empty as e:
+            raise Exception("The parsing process crashed and did not produce a report") from e
     finally:
         if process.is_alive():
             _stop_process(process)
+        result_queue.close()
+        result_queue.join_thread()
         _close_process(process)
 
 
@@ -198,12 +186,11 @@ def _close_process(process: multiprocessing.Process) -> None:
 def run_parser_command(
     batch_entry: BatchEntry,
     config: OgreRunConfiguration,
-    result: ListProxy,
+    result,
 ) -> None:
-    """Wrapper that invokes ``ogre.commands.run_parser`` and stores the result."""
     start_date = datetime.datetime.now(datetime.timezone.utc).isoformat()
     try:
-        result.append(run_parser(batch_entry, config))
+        result.put(run_parser(batch_entry, config))
     except Exception as e:
         error = (
             f"A critical error occurred while parsing file '{config.batch_entries}' "
@@ -211,7 +198,7 @@ def run_parser_command(
         )
         logger.error(error)
 
-        result.append(
+        result.put(
             RunResult(
                 config.mapping_label,
                 1,
@@ -228,11 +215,10 @@ def run_parser_command(
         )
 
 
-def run_batch_parser_command(config: OgreRunConfiguration, result: ListProxy) -> None:
-    """Wrapper that invokes ``ogre.commands.run_batch_parser`` and stores the result."""
+def run_batch_parser_command(config: OgreRunConfiguration, result) -> None:
     start_date = datetime.datetime.now(datetime.timezone.utc).isoformat()
     try:
-        result.append(run_batch_parser(config))
+        result.put(run_batch_parser(config))
     except Exception as e:
         error = (
             f"A critical error occurred while parsing file '{config.batch_entries}' "
@@ -240,7 +226,7 @@ def run_batch_parser_command(config: OgreRunConfiguration, result: ListProxy) ->
         )
         logger.error(error)
 
-        result.append(
+        result.put(
             RunResult(
                 config.mapping_label,
                 1,
@@ -285,18 +271,17 @@ def run_plugin(args: Any) -> None:
     )
 
     plugin_file = args.plugin_config
-    tree = ET.parse(plugin_file)
-    root = tree.getroot()
-    plugin = root.attrib.get("parser")
-    is_batch = root.attrib.get("batch", None)
+    registry = build_current_plugin_registry()
+    plugin_config = registry.load_plugin_parser(plugin_file)
+    plugin = plugin_config.parser_name
 
     params = parse_params(args.params)
     run_config = RunConfiguration([output_config], False, params)
     metadata = Metadata(args.computer_name)
     metadata.archive_filename = args.filename
 
-    if is_batch:
-        parser_obj = find_batched_parser(str(plugin))
+    if plugin_config.batch:
+        parser_obj = registry.create_batched_parser(plugin)
         if parser_obj:
             try:
                 logger.info(f"Running '{plugin}', on file '{args.filename}' ")
@@ -313,7 +298,7 @@ def run_plugin(args: Any) -> None:
                 logger.error(f"file: '{args.filename}' with parser: '{plugin}' error: {e}")
             return
     else:
-        parser_obj = find_parser(str(plugin))
+        parser_obj = registry.create_parser(plugin)
         if parser_obj:
             try:
                 logger.info(f"Running '{plugin}', on file '{args.filename}' ")

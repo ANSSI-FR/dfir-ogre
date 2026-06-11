@@ -20,6 +20,8 @@ Before opening a pull request, run:
 ```sh
 uv sync --frozen
 uv run python -m unittest discover -s test -t . -v
+uv run coverage run -m unittest discover -s test -t .
+uv run coverage report -m --include='src/ogre/*'
 uv run ruff format --check .
 uv run ruff check .
 uv run pyright

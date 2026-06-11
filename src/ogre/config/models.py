@@ -17,7 +17,7 @@ class Mapping:
     plugin_file: str
     mapping_label: str
     skip_short_name: bool
-    force_nake_case: bool
+    force_snake_case: bool
     timeout: int
     params: dict[str, Any]
     output: list[str]
@@ -40,7 +40,7 @@ class Configuration:
 
 
 def load_mapping(
-    mapping_dict: dict[str, Any], default_timeout: int, force_nake_case: bool
+    mapping_dict: dict[str, Any], default_timeout: int, force_snake_case: bool
 ) -> Mapping:
     remaining = dict(mapping_dict)
     archive_file_pattern = remaining.pop("archive_file_pattern", None)
@@ -55,7 +55,7 @@ def load_mapping(
             "Only one 'archive_file_pattern' or 'original_file_pattern' "
             f"must be defined: {remaining}"
         )
-    force_nake_case = remaining.pop("force_nake_case", force_nake_case)
+    force_snake_case = remaining.pop("force_snake_case", force_snake_case)
     skip_short_name = remaining.pop("skip_original_short_name", True)
 
     plugin_file = remaining.pop("plugin_file", None)
@@ -78,7 +78,7 @@ def load_mapping(
         plugin_file,
         mapping_label,
         skip_short_name,
-        force_nake_case,
+        force_snake_case,
         timeout,
         remaining,
         output,

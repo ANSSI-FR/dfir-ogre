@@ -12,56 +12,15 @@ from pathlib import Path
 import yaml
 from tabulate import tabulate
 
-from .commands import list_parsers
+from .config.loader import list_parsers
 from .logging import init_logger
-from .reporting import ArchiveReport, DataclassJSONEncoder, ParserResult, ReportBuilder
-from .runner import (
-    parse_archive,
-    parse_params,
-    run_batch_parser_command,
-    run_batch_parser_with_timeout,
-    run_parser_command,
-    run_parser_with_timeout,
-    run_plugin,
-)
+from .runner import parse_archive, run_plugin
 from .timeline import build_timeline
-from .void_parser import VoidParser as VoidParser
-
-__all__ = [
-    "ArchiveReport",
-    "DataclassJSONEncoder",
-    "ParserResult",
-    "ReportBuilder",
-    "VoidParser",
-    "display_plugin_list",
-    "handle_orc_archive",
-    "handle_timeline",
-    "main",
-    "parse_archive",
-    "parse_params",
-    "run_batch_parser_command",
-    "run_batch_parser_with_timeout",
-    "run_parser_command",
-    "run_parser_with_timeout",
-    "run_plugin",
-]
 
 logger = logging.getLogger(__name__)
 
 
-def main() -> None:
-    """
-    Entry point for the Ogre CLI.
-
-    It parses the command‑line arguments and dispatches to the appropriate
-    sub‑command implementation:
-
-    * ``list`` – List available parser plugins.
-    * ``plugin`` – Run a single plugin against a file.
-    * ``orc`` – Unpack an ORC archive and run the configured parsers.
-    * ``timeline`` – Same as ``orc`` but generates a a unique timeline CSV file.
-    """
-
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ogre",
         description="The DFIR-OGRE command line interface",
@@ -171,7 +130,17 @@ def main() -> None:
 
     timeline.set_defaults(func=handle_timeline)
 
-    # parse the provided arguments and launch function
+    return parser
+
+
+def main() -> None:
+    """
+    Entry point for the Ogre CLI.
+
+    It parses the command-line arguments and dispatches to the appropriate
+    sub-command implementation.
+    """
+    parser = build_parser()
     args = parser.parse_args()
     if hasattr(args, "func"):
         args.func(args)
