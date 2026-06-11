@@ -1,25 +1,33 @@
 import copy
 import importlib
 import os
-import pkgutil
 import re
 import time
-import uuid
-import xml.etree.ElementTree as ET
-import dateutil.parser
-
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-
+import dateutil.parser
 import yaml
-from dfir_ogre_common import BatchEntry,Metadata, OgreBatchedPlugin, OgrePlugin, PluginDescription, RunConfiguration
+from dfir_ogre_common import BatchEntry, Metadata, PluginDescription, RunConfiguration
 
+from .archive_extraction import unpack_dfir_orc
+from .archive_metadata import load_archive_metadata
 from .configuration import Configuration, build_configuration
-from .dfir_orc_unpack import load_archive_metadata, unpack_dfir_orc
+from .plugins import (
+    PluginDefinition,
+    find_batched_parser,
+    find_parser,
+    list_plugin_descriptions,
+    load_plugin_parser,
+)
+from .plugins import (
+    load_plugins as _load_plugins,
+)
+from .template_vars import TIMESTAMP_FORMAT, apply_dir_tree, replace_placeholders
 
 CASE_PARAM = "case"
+
 
 @dataclass
 class OgreRunConfiguration:
@@ -31,22 +39,35 @@ class OgreRunConfiguration:
     batch: bool
     timeout: int
 
+
 class RunConfigMap:
-    map: dict[str, OgreRunConfiguration ]
+    map: dict[str, OgreRunConfiguration]
+
     def __init__(self):
         self.map = {}
 
-    def add_configuration(self, batch_entry: BatchEntry, plugin_file: str,   mapping_label: str,  module: str,parser: str,batch: bool,timeout: int ):
+    def add_configuration(
+        self,
+        batch_entry: BatchEntry,
+        plugin_file: str,
+        mapping_label: str,
+        module: str,
+        parser: str,
+        batch: bool,
+        timeout: int,
+    ):
         entry = self.map.get(plugin_file, None)
         if entry:
             entry.batch_entries.append(batch_entry)
         else:
-            self.map[plugin_file] = OgreRunConfiguration([batch_entry],plugin_file,mapping_label,module,parser, batch, timeout )
+            self.map[plugin_file] = OgreRunConfiguration(
+                [batch_entry], plugin_file, mapping_label, module, parser, batch, timeout
+            )
 
 
 def load_config(
     conf_file: str, global_var: dict[str, str]
-) -> tuple[Configuration, dict[str, 'PluginDefinition']]:
+) -> tuple[Configuration, dict[str, "PluginDefinition"]]:
     """
     Load and validate a YAML configuration file. Ensures:
     1. All specified plugins are available via registered prefixes
@@ -86,48 +107,29 @@ def load_config(
                 _ = re.compile(map.archive_file_pattern, re.IGNORECASE)
             except Exception as e:
                 raise Exception(
-                    f"{e} in archive_file_pattern regex:'{map.archive_file_pattern}', mapping_label:'{map.mapping_label}'"
-                )
+                    f"{e} in archive_file_pattern regex:'{map.archive_file_pattern}', "
+                    f"mapping_label:'{map.mapping_label}'"
+                ) from e
 
         if map.original_file_pattern:
             try:
-                _ =  re.compile(map.original_file_pattern, re.IGNORECASE)
+                _ = re.compile(map.original_file_pattern, re.IGNORECASE)
             except Exception as e:
                 raise Exception(
-                    f"{e} in original_file_pattern regex:'{map.original_file_pattern}', mapping_label:'{map.mapping_label}'"
+                    f"{e} in original_file_pattern regex:'{map.original_file_pattern}', "
+                    f"mapping_label:'{map.mapping_label}'"
+                ) from e
+        for output_name in map.output:
+            if output_name not in config.output:
+                raise TypeError(
+                    f"output '{output_name}' referenced by mapping_label:"
+                    f"'{map.mapping_label}' is not defined"
                 )
 
     return config, plugins
 
 
-# A plugin name cache extracted for the plugin xml file, to avoid having to read the xml for every run
-PLUGIN_PARSER_CACHE: dict[str, tuple[str,bool]] = {}
-
-
-def load_plugin_parser(plugin_file: str) -> tuple[str,bool]:
-    plugin_parser = PLUGIN_PARSER_CACHE.get(plugin_file, None)
-    if plugin_parser is None:
-
-        tree = ET.parse(plugin_file)
-        root = tree.getroot()
-
-        plugin_name = root.attrib.get("parser")
-        batch = root.attrib.get("batch")
-        is_batched = batch is not None
-
-        if not plugin_name:
-            raise Exception(
-                f"'parser' attribute not found in plugin file :'{plugin_file}'"
-            )
-        plugin_parser = (plugin_name, is_batched)
-        PLUGIN_PARSER_CACHE[plugin_file] = plugin_parser
-
-    return plugin_parser
-
-
-def list_parsers(
-    conf_file: str, global_vars: dict[str, str]
-) -> list[PluginDescription]:
+def list_parsers(conf_file: str, global_vars: dict[str, str]) -> list[PluginDescription]:
     """
     List all available parsers based on a YAML configuration file.
 
@@ -140,7 +142,7 @@ def list_parsers(
         conf_file (str): Path to the YAML configuration file specifying plugin prefixes.
 
     Returns:
-        List[PluginDescription]: A list of plugin descriptions, each representing a parser's metadata.
+        List[PluginDescription]: Descriptions for discovered parser plugins.
 
     Raises:
         KeyError: If two plugins define the same command name.
@@ -152,21 +154,7 @@ def list_parsers(
     config = build_configuration(config_dict, global_vars)
     _load_plugins(config.plugin_prefixes)
 
-    parser_dict = {}
-    descriptions = []
-    for parser in OgrePlugin.__subclasses__():
-        module_name = parser.__module__
-        parser_descr = parser().description()
-        entry_module = parser_dict.get(parser_descr.get_command())
-        if entry_module:
-            raise KeyError(
-                f"Parser: '{parser_descr.get_command()}' for class: {parser.__class__} module: {module_name} is already defined in module: {entry_module}"
-            )
-        else:
-            parser_dict[parser_descr.get_command()] = module_name
-            descriptions.append(parser_descr)
-
-    return descriptions
+    return list_plugin_descriptions()
 
 
 @dataclass
@@ -181,13 +169,11 @@ class PrepareRunResult:
     tmp_folder: str
 
 
-
-
 def prepare_runs(
     conf_file: str,
     archive: str,
     password: str | None,
-    global_var: dict[str, str] = {},  # pyright: ignore[reportCallInDefaultInitializer]
+    global_var: dict[str, str] | None = None,
 ) -> PrepareRunResult:
     """
     Prepare and configure runs based on a configuration file.
@@ -207,38 +193,37 @@ def prepare_runs(
     - conf_file (str): Path to the YAML configuration file.
     - archive (str): Name of the archive to be processed.
     - password (Optional[str]): Password for sub-archives, if necessary.
-    - global_var (Dict[str, str]): Dictionary of global variables that can override parameters in the config file.
+    - global_var (Dict[str, str]): Global variables that override config values.
 
     Returns:
-    - PrepareRunResult: A result object containing a list of configured run configurations and any errors encountered.
+    - PrepareRunResult: Configured runs and any errors encountered.
 
     """
     run_config_map = RunConfigMap()
+    runtime_vars = dict(global_var or {})
     # Load and validate the configuration
-    configuration, parsers = load_config(conf_file, global_var)
+    configuration, parsers = load_config(conf_file, runtime_vars)
 
     # Load metadata from the main archive
     orc_outcome = load_archive_metadata(archive)
     archives = orc_outcome.archives
-    global_var["computer_name"] = orc_outcome.computer_name
-    global_var["orc_id"] = orc_outcome.id
-    global_var["orc_start_date"] = orc_outcome.date.isoformat()
+    runtime_vars["computer_name"] = orc_outcome.computer_name
+    runtime_vars["orc_id"] = orc_outcome.id
+    runtime_vars["orc_start_date"] = orc_outcome.date.isoformat()
 
     errors = []
 
-
     # replace wildcards in configuration.report_folder
-    configuration.report_folder = configuration.report_folder.replace(
-        "$case", configuration.case
-    ).replace("$timestamp", orc_outcome.date.strftime("%Y%m%d_%H%M%S"))
-    if orc_outcome.dir_tree:
-        configuration.report_folder = configuration.report_folder.replace(
-            "$dir_tree", orc_outcome.dir_tree
-        )
-    else:
-        configuration.report_folder = configuration.report_folder.replace(
-            "/$dir_tree", configuration.dir_tree
-        )
+    timestamp = orc_outcome.date.strftime(TIMESTAMP_FORMAT)
+    configuration.report_folder = replace_placeholders(
+        configuration.report_folder,
+        {"case": configuration.case, "timestamp": timestamp},
+    )
+    configuration.report_folder = apply_dir_tree(
+        configuration.report_folder,
+        orc_outcome.dir_tree,
+        configuration.dir_tree,
+    )
 
     for archive in archives:
         # Create a deep copy of the configuration to avoid modifying the original
@@ -246,24 +231,25 @@ def prepare_runs(
 
         # Replace global wildcards in output configurations
         for output_conf in conf.output.values():
-            output_folder = (
-                output_conf.output_folder.replace("$output_folder", conf.output_folder)
-                .replace("$archive_name", Path(archive).stem)
-                .replace("$case", configuration.case)
-                .replace("$timestamp", orc_outcome.date.strftime("%Y%m%d_%H%M%S"))
+            archive_variables = {
+                "output_folder": conf.output_folder,
+                "archive_name": Path(archive).stem,
+                "case": configuration.case,
+                "timestamp": timestamp,
+            }
+            output_folder = replace_placeholders(
+                output_conf.output_folder,
+                archive_variables,
             )
-            if orc_outcome.dir_tree:
-                output_folder = output_folder.replace("$dir_tree", orc_outcome.dir_tree)
-            else:
-                output_folder = output_folder.replace("/$dir_tree", configuration.dir_tree)
+            output_folder = apply_dir_tree(
+                output_folder, orc_outcome.dir_tree, configuration.dir_tree
+            )
 
             output_conf.output_folder = output_folder
 
-            base_file_name = (
-                output_conf.base_file_name.replace("$output_folder", conf.output_folder)
-                .replace("$archive_name", Path(archive).stem)
-                .replace("$case", configuration.case)
-                .replace("$timestamp", orc_outcome.date.strftime("%Y%m%d_%H%M%S"))
+            base_file_name = replace_placeholders(
+                output_conf.base_file_name,
+                archive_variables,
             )
             output_conf.base_file_name = base_file_name
 
@@ -282,51 +268,47 @@ def prepare_runs(
         for v_map in vmapping.valid_mapping:
             mapping = v_map.mapping
             # replace wildcards in the plugin_file parameter
-            mapping.plugin_file = (
-                mapping.plugin_file.replace("$output_folder", conf.output_folder)
-                .replace("$archive_name", Path(archive).stem)
-                .replace("$case", configuration.case)
-                .replace("$plugin_folder", conf.plugin_folder)
+            plugin_file = replace_placeholders(
+                mapping.plugin_file,
+                {
+                    "output_folder": conf.output_folder,
+                    "archive_name": Path(archive).stem,
+                    "case": configuration.case,
+                    "plugin_folder": conf.plugin_folder,
+                },
             )
-            parser_definition = load_plugin_parser(mapping.plugin_file)
+            parser_definition = load_plugin_parser(plugin_file)
 
             # Get the module for the parser
             plugin_definition = parsers.get(parser_definition[0], None)
             if not plugin_definition:
-                raise Exception(
-                    f"plugin '{parser_definition}' not found in the loaded plugins"
-                )
+                raise Exception(f"plugin '{parser_definition}' not found in the loaded plugins")
 
             # Prepare output configurations for this run
-            output = [
-                copy.deepcopy(conf.output[out_name]) for out_name in mapping.output
-            ]
+            output = [copy.deepcopy(conf.output[out_name]) for out_name in mapping.output]
 
             # Replace run-specific wildcards in output parameters
             for output_conf in output:
-                output_folder = (
-                    output_conf.output_folder.replace(
-                        "$mapping_label", mapping.mapping_label
-                    )
-                    .replace("$parser", parser_definition[0])
-                    .replace("$file_name", Path(v_map.file).stem)
-                    .replace("$computer_name", orc_outcome.computer_name)
+                run_variables = {
+                    "mapping_label": mapping.mapping_label,
+                    "parser": parser_definition[0],
+                    "file_name": Path(v_map.file).stem,
+                    "computer_name": orc_outcome.computer_name,
+                }
+                output_folder = replace_placeholders(
+                    output_conf.output_folder,
+                    run_variables,
                 )
                 output_conf.output_folder = output_folder
 
-                base_file_name = (
-                    output_conf.base_file_name.replace(
-                        "$mapping_label", mapping.mapping_label
-                    )
-                    .replace("$parser", parser_definition[0])
-                    .replace("$file_name", Path(v_map.file).stem)
-                    .replace("$computer_name", orc_outcome.computer_name)
+                base_file_name = replace_placeholders(
+                    output_conf.base_file_name,
+                    run_variables,
                 )
                 output_conf.base_file_name = base_file_name
 
             # Build metadata for this run
-            metadata = Metadata(global_var["computer_name"])
-
+            metadata = Metadata(runtime_vars["computer_name"])
 
             # Extract folder and archive names from the path
             archive_abs_path = os.path.abspath(archive)
@@ -347,24 +329,26 @@ def prepare_runs(
             metadata.vss = v_map.vss
 
             if v_map.original_creation_date:
-
-                metadata.creation_date = dateutil.parser.isoparse(v_map.original_creation_date).astimezone(
-                    timezone.utc
-                )
+                metadata.creation_date = dateutil.parser.isoparse(
+                    v_map.original_creation_date
+                ).astimezone(timezone.utc)
             if v_map.original_modification_date:
-                metadata.modif_date = dateutil.parser.isoparse(v_map.original_modification_date).astimezone(
-                    timezone.utc
-                )
+                metadata.modif_date = dateutil.parser.isoparse(
+                    v_map.original_modification_date
+                ).astimezone(timezone.utc)
 
             # replace wildcards in the additional parameters
-            additional_params: dict[str, str|None] = {}
+            additional_params: dict[str, str | None] = {}
             for key, value in mapping.params.items():
                 if isinstance(value, str):
-                    additional_params[key] = (
-                        value.replace("$output_folder", conf.output_folder)
-                        .replace("$archive_name", Path(archive).stem)
-                        .replace("$case", configuration.case)
-                        .replace("$plugin_folder", conf.plugin_folder)
+                    additional_params[key] = replace_placeholders(
+                        value,
+                        {
+                            "output_folder": conf.output_folder,
+                            "archive_name": Path(archive).stem,
+                            "case": configuration.case,
+                            "plugin_folder": conf.plugin_folder,
+                        },
                     )
                 else:
                     additional_params[key] = str(value)
@@ -377,11 +361,18 @@ def prepare_runs(
             )
             # Get absolute path of the file to process
             abs_path = os.path.abspath(v_map.file)
-            batch_entry = BatchEntry(abs_path,run_config,metadata )
+            batch_entry = BatchEntry(abs_path, run_config, metadata)
 
-            run_config_map.add_configuration(batch_entry,mapping.plugin_file,mapping.mapping_label,plugin_definition.module_name,parser_definition[0], parser_definition[1],mapping.timeout )
+            run_config_map.add_configuration(
+                batch_entry,
+                plugin_file,
+                mapping.mapping_label,
+                plugin_definition.module_name,
+                parser_definition[0],
+                parser_definition[1],
+                mapping.timeout,
+            )
             # Add the run configuration to the list
-
 
     # Return the final list of runs and any errors encountered
     return PrepareRunResult(
@@ -429,7 +420,7 @@ class RunResult:
     output: list[OutputStat]
 
 
-def run_parser(entry:BatchEntry, config: OgreRunConfiguration) -> RunResult:
+def run_parser(entry: BatchEntry, config: OgreRunConfiguration) -> RunResult:
     """
     Execute a parser plugin with the provided configuration.
 
@@ -458,8 +449,7 @@ def run_parser(entry:BatchEntry, config: OgreRunConfiguration) -> RunResult:
     Raises:
         TypeError: If the specified parser is not found in registered plugins
     """
-    _ = importlib.import_module(config.module)
-    found = False
+    importlib.import_module(config.module)
     start_date = datetime.now(timezone.utc).astimezone().isoformat()
 
     run_result = RunResult(
@@ -476,51 +466,22 @@ def run_parser(entry:BatchEntry, config: OgreRunConfiguration) -> RunResult:
         [],
     )
 
-    for parser in OgrePlugin.__subclasses__():
-        p = parser()
-        if p.description().get_command() == config.parser:
-            start = time.time()
-            try:
-                report = p.parse(
-                    entry.file, config.plugin_file, entry.run_config, entry.metadata
-                )
-                run_result.last_error = report.last_error
-                run_result.num_errors = report.num_errors
-                for out_report in report.output_reports:
-                    output_stat = OutputStat(out_report.last_error, [])
-                    for fr in out_report.file_reports:
-                        output_stat.file_stats.append(
-                            FileStat(
-                                fr.file_name,
-                                fr.num_lines,
-                                fr.output_type,
-                                fr.format,
-                                fr.date_format,
-                                fr.with_timeline,
-                                fr.with_qualifiers,
-                                fr.include_empty,
-                            )
-                        )
-                    run_result.output.append(output_stat)
-
-            except Exception as e:
-                run_result.last_error = f"{e}"
-
-            end = time.time()
-            found = True
-
-            run_result.time_s = end - start
-            break
-
-    if not found:
+    parser = find_parser(config.parser)
+    if not parser:
         raise TypeError(f"parser {config.parser} not found")
-    else:
-        for stat in run_result.output:
-            for file_stat in stat.file_stats:
-                run_result.rows += file_stat.num_rows
-        run_result.row_sec = round(run_result.rows / run_result.time_s, 0)
-        run_result.time_s = round(run_result.time_s, 3)
-        return run_result
+
+    start = time.time()
+    try:
+        report = parser.parse(entry.file, config.plugin_file, entry.run_config, entry.metadata)
+        run_result.last_error = report.last_error
+        run_result.num_errors = report.num_errors
+        _add_output_reports(run_result, report.output_reports)
+    except Exception as e:
+        run_result.last_error = f"{e}"
+    run_result.time_s = time.time() - start
+
+    return _finalize_run_result(run_result)
+
 
 def run_batch_parser(config: OgreRunConfiguration) -> RunResult:
     """
@@ -528,7 +489,6 @@ def run_batch_parser(config: OgreRunConfiguration) -> RunResult:
 
     """
     importlib.import_module(config.module)
-    found = False
     start_date = datetime.now(timezone.utc).astimezone().isoformat()
 
     run_result = RunResult(
@@ -545,111 +505,56 @@ def run_batch_parser(config: OgreRunConfiguration) -> RunResult:
         [],
     )
 
-    for parser in OgreBatchedPlugin.__subclasses__():
-        p = parser()
-        if p.description().get_command() == config.parser:
-            start = time.time()
-            try:
-                report = p.parse(
-                    config.batch_entries, config.plugin_file
-                )
-                run_result.last_error = report.last_error
-                run_result.num_errors = report.num_errors
-                for out_report in report.output_reports:
-                    output_stat = OutputStat(out_report.last_error, [])
-                    for fr in out_report.file_reports:
-                        output_stat.file_stats.append(
-                            FileStat(
-                                fr.file_name,
-                                fr.num_lines,
-                                fr.output_type,
-                                fr.format,
-                                fr.date_format,
-                                fr.with_timeline,
-                                fr.with_qualifiers,
-                                fr.include_empty,
-                            )
-                        )
-                    run_result.output.append(output_stat)
-
-            except Exception as e:
-                run_result.last_error = f"{e}"
-
-            end = time.time()
-            found = True
-
-            run_result.time_s = end - start
-            break
-
-    if not found:
+    parser = find_batched_parser(config.parser)
+    if not parser:
         raise TypeError(f"parser {config.parser} not found")
-    else:
-        for stat in run_result.output:
-            for file_stat in stat.file_stats:
-                run_result.rows += file_stat.num_rows
-        run_result.row_sec = round(run_result.rows / run_result.time_s, 0)
-        run_result.time_s = round(run_result.time_s, 3)
-        return run_result
 
-@dataclass
-class PluginDefinition:
-    parser_name:str
-    module_name: str
-    batch: bool
+    start = time.time()
+    try:
+        report = parser.parse(config.batch_entries, config.plugin_file)
+        run_result.last_error = report.last_error
+        run_result.num_errors = report.num_errors
+        _add_output_reports(run_result, report.output_reports)
+    except Exception as e:
+        run_result.last_error = f"{e}"
+    run_result.time_s = time.time() - start
 
-def _load_plugins(plugin_prefixes: list[str]) -> dict[str, PluginDefinition]:
-    """
-    Load plugins with modules matching given prefixes and register their command parsers.
+    return _finalize_run_result(run_result)
 
-    1. Imports all modules starting with the specified prefixes
-    2. Registers all subclasses of OgrePlugin
-    3. Creates a mapping from parser command names to module paths
-    4. Raises an error for duplicate command names to ensure uniqueness
 
-    Args:
-        plugin_prefixes: List of module name prefixes to search for plugins
-
-    Returns:
-        Dictionary mapping parser command names to their module paths
-
-    Raises:
-        KeyError: If multiple plugins define the same command name
-    """
-
-    for _, name, _ in pkgutil.iter_modules():
-        for prefix in plugin_prefixes:
-            if name.startswith(prefix):
-                importlib.import_module(name)
-    parser_dict:dict[str, PluginDefinition] = {}
-
-    for parser in OgrePlugin.__subclasses__():
-        module_name = parser.__module__
-        parser_name = parser().description().get_command()
-
-        entry_module = parser_dict.get(parser_name)
-        if entry_module:
-            raise KeyError(
-                f"Parser name: '{parser_name}' from module: '{module_name}' is already defined in module: '{entry_module}'"
-            )
-        else:
-            parser_dict[parser_name] = PluginDefinition(parser_name,module_name, False)
-
-    for parser in OgreBatchedPlugin.__subclasses__():
-            module_name = parser.__module__
-            parser_name = parser().description().get_command()
-
-            entry_module = parser_dict.get(parser_name)
-            if entry_module:
-                raise KeyError(
-                    f"Parser name: '{parser_name}' from module: '{module_name}' is already defined in module: '{entry_module}'"
+def _add_output_reports(run_result: RunResult, output_reports) -> None:
+    for out_report in output_reports:
+        output_stat = OutputStat(out_report.last_error, [])
+        for fr in out_report.file_reports:
+            output_stat.file_stats.append(
+                FileStat(
+                    fr.file_name,
+                    fr.num_lines,
+                    fr.output_type,
+                    fr.format,
+                    fr.date_format,
+                    fr.with_timeline,
+                    fr.with_qualifiers,
+                    fr.include_empty,
                 )
-            else:
-                parser_dict[parser_name] = PluginDefinition(parser_name,module_name, True)
+            )
+        run_result.output.append(output_stat)
 
 
-    return parser_dict
+def _finalize_run_result(run_result: RunResult) -> RunResult:
+    for stat in run_result.output:
+        for file_stat in stat.file_stats:
+            run_result.rows += file_stat.num_rows
 
-def metadata_to_dict(metadata: Metadata)->dict:
+    if run_result.time_s > 0:
+        run_result.row_sec = round(run_result.rows / run_result.time_s, 0)
+    else:
+        run_result.row_sec = 0
+    run_result.time_s = round(run_result.time_s, 3)
+    return run_result
+
+
+def metadata_to_dict(metadata: Metadata) -> dict:
     # transform rust metadata into a dict to be able to serialize it in Json
     meta_dict = {}
     meta_dict["computer"] = metadata.computer

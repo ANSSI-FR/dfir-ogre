@@ -1,19 +1,18 @@
-import os
-import shutil
-from typing import Optional
-from unittest import TestCase, mock
-import py7zr
 import hashlib
+import os
+
 from py7zr.io import Py7zIO, WriterFactory
+
 MAX_FILE_NAME_BYTE_LENGTH = 240
+
+
 class _StreamIO(Py7zIO):
- 
     def __init__(self, fname: str):
         os.makedirs(os.path.dirname(fname), exist_ok=True)
-        self.writer = open(fname, 'wb')
+        self.writer = open(fname, "wb")
         self.length = 0
 
-    def write(self, s: bytes| bytearray)->int:
+    def write(self, s: bytes | bytearray) -> int:
         to_write = len(s)
         self.length += to_write
         self.writer.write(s)
@@ -28,8 +27,8 @@ class _StreamIO(Py7zIO):
     def size(self) -> int:
         return self.length
 
-    def read(self, size: Optional[int] = None) -> bytes:
-        return b''
+    def read(self, size: int | None = None) -> bytes:
+        return b""
 
     def seek(self, offset: int, whence: int = 0) -> int:
         return 0
@@ -37,20 +36,23 @@ class _StreamIO(Py7zIO):
 
 class RenameFactory(WriterFactory):
     """Factory class to return StreamWriter object."""
+
     def create(self, filename: str) -> Py7zIO:
         name = rename_file(filename)
         return _StreamIO(name)
 
-def need_rename(path:str)-> bool:
+
+def need_rename(path: str) -> bool:
     sample_file_name = os.path.basename(path)
-    sample_file_name_bytes = sample_file_name.encode('utf-8')
+    sample_file_name_bytes = sample_file_name.encode("utf-8")
     return len(sample_file_name_bytes) > MAX_FILE_NAME_BYTE_LENGTH
 
-def rename_file(path:str)->str:
+
+def rename_file(path: str) -> str:
     sample_file_dir = os.path.dirname(path)
     sample_file_name = os.path.basename(path)
-    sample_file_name_bytes = sample_file_name.encode('utf-8')
+    sample_file_name_bytes = sample_file_name.encode("utf-8")
 
-    hash_obj =hashlib.sha256(sample_file_name_bytes)
+    hash_obj = hashlib.sha256(sample_file_name_bytes)
     hex_hash = hash_obj.hexdigest()
     return os.path.join(sample_file_dir, hex_hash)

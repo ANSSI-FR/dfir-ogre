@@ -1,6 +1,6 @@
-from typing import Any
 import copy
 import os
+from typing import Any
 from unittest import TestCase
 
 import yaml
@@ -47,6 +47,9 @@ class TestConfiguration(TestCase):
             dict_conf["mapping"][0]["archive_file_pattern"],
             conf.mapping[0].archive_file_pattern,
         )
+        original = copy.deepcopy(dict_conf)
+        _ = build_configuration(dict_conf, {})
+        self.assertEqual(original, dict_conf)
         # self.assertEqual(
         #     dict_conf["output"]["rawjson"]["type"], conf.output["rawjson"].type
         # )
@@ -95,6 +98,9 @@ output:
 
         res = load_mapping(copy.deepcopy(dict_conf), 10, True)
         self.assertEqual(dict_conf["config_file"], res.params["config_file"])
+        original = copy.deepcopy(dict_conf)
+        _ = load_mapping(dict_conf, 10, True)
+        self.assertEqual(original, dict_conf)
 
         bad_copy = copy.deepcopy(dict_conf)
         bad_copy.pop("archive_file_pattern", None)
@@ -103,8 +109,7 @@ output:
             load_mapping(copy.deepcopy(bad_copy), 10, True)
         result = e.exception.__str__()
         self.assertTrue(
-            "Either 'archive_file_pattern' or 'original_file_pattern' must be defined"
-            in result
+            "Either 'archive_file_pattern' or 'original_file_pattern' must be defined" in result
         )
 
         bad_copy = copy.deepcopy(dict_conf)
@@ -141,6 +146,9 @@ output:
         res = load_output_configuration(copy.deepcopy(dict_conf))
 
         self.assertEqual(dict_conf["output_folder"], res.output_folder)
+        original = copy.deepcopy(dict_conf)
+        _ = load_output_configuration(dict_conf)
+        self.assertEqual(original, dict_conf)
 
         bad_copy = copy.deepcopy(dict_conf)
         bad_copy.pop("type", None)
@@ -157,7 +165,7 @@ output:
         self.assertTrue("'date_format' not found" in result)
 
     def test_conf_error(self):
-        dict_conf:dict[str,Any] = {
+        dict_conf: dict[str, Any] = {
             "plugin_prefixes": ["-ogre-anssi"],
             "case": "test_case",
             "temp_folder": ".tmp",
@@ -190,8 +198,7 @@ output:
         result: str = e.exception.__str__()
 
         self.assertTrue(
-            "Only one 'archive_file_pattern' or 'original_file_pattern' must be defined"
-            in result
+            "Only one 'archive_file_pattern' or 'original_file_pattern' must be defined" in result
         )
 
         dict_conf["temp_folder"] = None
@@ -244,7 +251,7 @@ output:
         conf = build_configuration(copy.deepcopy(dict_conf), global_params)
         self.assertEqual(conf.case, global_params["case"])
 
-        self.assertTrue(conf.temp_folder.startswith( global_params["temp_folder"]))
+        self.assertTrue(conf.temp_folder.startswith(global_params["temp_folder"]))
         self.assertEqual(conf.output_folder, global_params["output_folder"])
 
         os.environ["OGRE_CASE"] = ".CASE_ENV"
@@ -255,13 +262,13 @@ output:
             # global_params have priority over environment variables
             conf = build_configuration(copy.deepcopy(dict_conf), global_params)
             self.assertEqual(conf.case, global_params["case"])
-            self.assertTrue(conf.temp_folder.startswith( global_params["temp_folder"]))
+            self.assertTrue(conf.temp_folder.startswith(global_params["temp_folder"]))
             self.assertEqual(conf.output_folder, global_params["output_folder"])
 
             # Environment variables have a priority over what is defined in the configuration file
             conf = build_configuration(copy.deepcopy(dict_conf), {})
             self.assertEqual(conf.case, os.environ["OGRE_CASE"])
-            self.assertTrue(conf.temp_folder.startswith( os.environ["OGRE_TEMP_FOLDER"]))
+            self.assertTrue(conf.temp_folder.startswith(os.environ["OGRE_TEMP_FOLDER"]))
             self.assertEqual(conf.output_folder, os.environ["OGRE_OUTPUT_FOLDER"])
         finally:
             os.environ.pop("OGRE_CASE")
@@ -309,5 +316,5 @@ output:
         self.assertEqual(conf.case, case)
         self.assertEqual(conf.output_folder, f"{case}/output")
         self.assertEqual(conf.report_folder, f"{case}_report")
-        self.assertTrue(conf.temp_folder.startswith( f".tmp/{case}"))
+        self.assertTrue(conf.temp_folder.startswith(f".tmp/{case}"))
         self.assertEqual(conf.plugin_folder, f"{case}/conf")

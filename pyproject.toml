@@ -28,6 +28,8 @@ dfir-ogre-common = { git = "https://github.com/ANSSI-FR/dfir-ogre-common.git" }
 dfir-ogre-plugin-windows = { git = "https://github.com/ANSSI-FR/dfir-ogre-plugin-windows.git" }
 
 [tool.pyright]
+include = ["src", "test"]
+typeCheckingMode = "basic"
 reportUnknownVariableType = "none"
 reportUnknownParameterType = "none"
 reportUnknownArgumentType = "none"
@@ -35,7 +37,18 @@ reportMissingParameterType = "none"
 reportMissingTypeArgument = "none"
 reportMissingTypeStubs = "none"
 reportUnknownMemberType = "none"
-reportAny = "none"
-reportExplicitAny = "none"
-reportUnusedCallResult ="none"
+reportUnusedCallResult = "none"
 reportUnknownLambdaType = "none"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B006", "B008", "B904"]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.410",
+    "ruff>=0.15.16",
+]

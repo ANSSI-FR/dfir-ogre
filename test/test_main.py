@@ -44,7 +44,7 @@ class TestMain(TestCase):
             ".tmp", "main", "output", "secret", "text_output", "hello.test.jsonl"
         )
         data = ""
-        with open(output_file, "r") as f:
+        with open(output_file) as f:
             data = json.load(f)
             self.assertEqual(data["line"], "Hello world!")
             self.assertEqual(data["ogre_md"]["archive"], "secret.7z")
@@ -54,7 +54,7 @@ class TestMain(TestCase):
         report_output = os.path.join(".tmp", "main", "output", "report_secret_*")
         files = glob.glob(report_output, recursive=False)
 
-        with open(files[0], "r") as f:
+        with open(files[0]) as f:
             report = json.load(f)
             self.assertEqual(report["run_results"][0]["parser"], "SampleText")
 

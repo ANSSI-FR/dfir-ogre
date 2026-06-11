@@ -14,5 +14,16 @@ We aim to give constructive feedback promptly, but response times may vary depen
 * Feature requests and non-security-related bug reports are welcome but will be prioritized according to project needs.
 * General usage help is done on a best-effort basis.
 
+## Developer Checks
+Before opening a pull request, run:
+
+```sh
+uv sync --frozen
+uv run python -m unittest discover -s test -t . -v
+uv run ruff format --check .
+uv run ruff check .
+uv run pyright
+```
+
 ## Reporting Vulnerabilities  
 If you discover a security vulnerability, please report it confidentially following the guidelines in [SECURITY.md](SECURITY.md).

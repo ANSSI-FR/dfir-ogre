@@ -19,7 +19,7 @@ class Mapping:
     skip_short_name: bool
     force_nake_case: bool
     timeout: int
-    params: dict[str,Any]
+    params: dict[str, Any]
     output: list[str]
 
 
@@ -39,34 +39,38 @@ class Configuration:
     output: dict[str, OutputConfiguration]
 
 
-def load_mapping(dict: dict, default_timeout: int, force_nake_case: bool) -> Mapping:
-    archive_file_pattern = dict.pop("archive_file_pattern", None)
-    original_file_pattern = dict.pop("original_file_pattern", None)
+def load_mapping(
+    mapping_dict: dict[str, Any], default_timeout: int, force_nake_case: bool
+) -> Mapping:
+    remaining = dict(mapping_dict)
+    archive_file_pattern = remaining.pop("archive_file_pattern", None)
+    original_file_pattern = remaining.pop("original_file_pattern", None)
 
     if not archive_file_pattern and not original_file_pattern:
         raise KeyError(
-            f"Either 'archive_file_pattern' or 'original_file_pattern' must be defined: {dict}"
+            f"Either 'archive_file_pattern' or 'original_file_pattern' must be defined: {remaining}"
         )
     if archive_file_pattern and original_file_pattern:
         raise KeyError(
-            f"Only one 'archive_file_pattern' or 'original_file_pattern' must be defined: {dict}"
+            "Only one 'archive_file_pattern' or 'original_file_pattern' "
+            f"must be defined: {remaining}"
         )
-    force_nake_case = dict.pop("force_nake_case", force_nake_case)
-    skip_short_name = dict.pop("skip_original_short_name", True)
+    force_nake_case = remaining.pop("force_nake_case", force_nake_case)
+    skip_short_name = remaining.pop("skip_original_short_name", True)
 
-    plugin_file = dict.pop("plugin_file", None)
+    plugin_file = remaining.pop("plugin_file", None)
     if not plugin_file:
-        raise KeyError(f"'plugin_file' not found in mapping definition: {dict}")
+        raise KeyError(f"'plugin_file' not found in mapping definition: {remaining}")
 
-    mapping_label = dict.pop("mapping_label", None)
+    mapping_label = remaining.pop("mapping_label", None)
     if not mapping_label:
-        raise KeyError(f"'mapping_label' not found in mapping definition: {dict}")
+        raise KeyError(f"'mapping_label' not found in mapping definition: {remaining}")
 
-    output = dict.pop("output", None)
+    output = remaining.pop("output", None)
     if not output:
-        raise KeyError(f"'output' not found in mapping definition: {dict}")
+        raise KeyError(f"'output' not found in mapping definition: {remaining}")
 
-    timeout = dict.pop("timeout", default_timeout)
+    timeout = remaining.pop("timeout", default_timeout)
 
     return Mapping(
         archive_file_pattern,
@@ -76,12 +80,12 @@ def load_mapping(dict: dict, default_timeout: int, force_nake_case: bool) -> Map
         skip_short_name,
         force_nake_case,
         timeout,
-        dict,
+        remaining,
         output,
     )
 
 
-def build_configuration(config_dict: dict, global_var: dict[str, str]) -> Configuration:
+def build_configuration(config_dict: dict[str, Any], global_var: dict[str, str]) -> Configuration:
     plugin_prefixes = config_dict.get("plugin_prefixes", [DEFAULT_PLUGIN_NAME])
 
     mappings_list = config_dict.get("mapping", [])
@@ -98,7 +102,7 @@ def build_configuration(config_dict: dict, global_var: dict[str, str]) -> Config
         raise TypeError("'temp_folder' must be defined")
     temp_folder = temp_folder.replace("$case", case)
     path = Path(temp_folder)
-    #add a random folder to the path to avoid conflicts when processing data in parallel
+    # add a random folder to the path to avoid conflicts when processing data in parallel
     path = path / str(uuid4())
     temp_folder = str(path)
 
@@ -117,14 +121,12 @@ def build_configuration(config_dict: dict, global_var: dict[str, str]) -> Config
         report_folder = output_folder
     report_folder = report_folder.replace("$case", case)
 
-    force_snake_case = config_dict.pop("force_snake_case", True)
+    force_snake_case = config_dict.get("force_snake_case", True)
 
     inner_archive_password = load_variable("inner_archive_password", config_dict, global_var)
-    default_timeout = config_dict.pop("default_timeout", DEFAULT_TIMEOUT)
+    default_timeout = config_dict.get("default_timeout", DEFAULT_TIMEOUT)
 
-    mappings = [
-        load_mapping(mapp, default_timeout, force_snake_case) for mapp in mappings_list
-    ]
+    mappings = [load_mapping(mapp, default_timeout, force_snake_case) for mapp in mappings_list]
 
     output_map: dict[str, Any] = config_dict.get("output", {})
     output = {}
@@ -148,38 +150,39 @@ def build_configuration(config_dict: dict, global_var: dict[str, str]) -> Config
 
 
 def load_output_configuration(config_dict: dict[str, Any]) -> OutputConfiguration:
-    type = config_dict.pop("type", None)
-    if not type:
-        raise KeyError(f"'type' not found in mapping definition: {config_dict}")
+    remaining = dict(config_dict)
+    output_type = remaining.pop("type", None)
+    if not output_type:
+        raise KeyError(f"'type' not found in mapping definition: {remaining}")
 
-    format = config_dict.pop("format", None)
-    if not format:
-        raise KeyError(f"'format' not found in mapping definition: {config_dict}")
+    output_format = remaining.pop("format", None)
+    if not output_format:
+        raise KeyError(f"'format' not found in mapping definition: {remaining}")
 
-    date_format = config_dict.pop("date_format", None)
+    date_format = remaining.pop("date_format", None)
     if not date_format:
-        raise KeyError(f"'date_format' not found in mapping definition: {config_dict}")
+        raise KeyError(f"'date_format' not found in mapping definition: {remaining}")
 
-    output_folder = config_dict.pop("output_folder", None)
+    output_folder = remaining.pop("output_folder", None)
     if not output_folder:
-        raise KeyError(f"'output_folder' not found in mapping definition: {config_dict}")
+        raise KeyError(f"'output_folder' not found in mapping definition: {remaining}")
 
-    base_file_name = config_dict.pop("base_file_name", None)
+    base_file_name = remaining.pop("base_file_name", None)
     if not base_file_name:
-        raise KeyError(f"'base_file_name' not found in mapping definition: {config_dict}")
+        raise KeyError(f"'base_file_name' not found in mapping definition: {remaining}")
 
-    with_timeline: bool = config_dict.pop("with_timeline", False)
-    with_qualifiers: bool = config_dict.pop("with_qualifiers", False)
-    include_empty: bool = config_dict.pop("include_empty_field", False)
+    with_timeline: bool = remaining.pop("with_timeline", False)
+    with_qualifiers: bool = remaining.pop("with_qualifiers", False)
+    include_empty: bool = remaining.pop("include_empty_field", False)
     string_dict: dict[str, str] = {}
 
-    for key, value in config_dict.items():
+    for key, value in remaining.items():
         string_dict[key] = str(value)
     return OutputConfiguration(
         base_file_name,
         output_folder,
-        type,
-        format,
+        output_type,
+        output_format,
         date_format,
         with_timeline,
         with_qualifiers,

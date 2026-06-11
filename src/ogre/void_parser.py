@@ -18,4 +18,4 @@ class VoidParser(OgrePlugin):
         run_config: RunConfiguration,
         metadata: Metadata,
     ) -> RunReport:
-      return RunReport()
+        return RunReport()

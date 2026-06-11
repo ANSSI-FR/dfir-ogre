@@ -1,12 +1,11 @@
 import os
 import shutil
-from typing import List
 from unittest import TestCase
 
 from ogre.configuration import Mapping
 from ogre.dfir_orc_unpack import load_archive_metadata, unpack_dfir_orc
 
-from . import TEMP_FOLDER, PLUGIN_FOLDER
+from . import PLUGIN_FOLDER, TEMP_FOLDER
 
 
 class TestDfirUnpack(TestCase):
@@ -14,7 +13,7 @@ class TestDfirUnpack(TestCase):
     def test_original_file(self):
         temp_folder = os.path.join(TEMP_FOLDER, "TestDfirUnpackOrignal")
         plugin_file = os.path.join(PLUGIN_FOLDER, "void.xml")
-        mapping: List[Mapping] = [
+        mapping: list[Mapping] = [
             Mapping(
                 None,
                 ".*Windows\\\\System32\\\\winevt\\\\Logs\\\\Microsoft-Windows-Kernel-Event.*",
@@ -58,20 +57,16 @@ class TestDfirUnpack(TestCase):
             first_mapping.original_file,
             "\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
         )
-        self.assertEqual(
-            first_mapping.original_creation_date, "2021-11-30 12:36:15.818"
-        )
-        self.assertEqual(
-            first_mapping.original_modification_date, "2021-11-30 12:36:20.364"
-        )
+        self.assertEqual(first_mapping.original_creation_date, "2021-11-30 12:36:15.818")
+        self.assertEqual(first_mapping.original_modification_date, "2021-11-30 12:36:20.364")
         shutil.rmtree(temp_folder)
 
-    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_original_file_skip_short_name -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_original_file_skip_short_name
     def test_original_file_skip_short_name(self):
         temp_folder = os.path.join(TEMP_FOLDER, "TestDfirUnpackSkipShort")
         plugin_file = os.path.join(PLUGIN_FOLDER, "void.xml")
         # skip windows short name
-        mapping: List[Mapping] = [
+        mapping: list[Mapping] = [
             Mapping(
                 None,
                 ".*\\.evtx$",
@@ -116,12 +111,12 @@ class TestDfirUnpack(TestCase):
         self.assertEqual(5, len(mappings.valid_mapping))
         shutil.rmtree(temp_folder)
 
-    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_archive_file_filter_short_name -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_archive_file_filter
     def test_archive_file_filter_short_name(self):
         temp_folder = os.path.join(TEMP_FOLDER, "TestDfirUnpackSkipShort")
         plugin_file = os.path.join(PLUGIN_FOLDER, "void.xml")
         # skip windows short name
-        mapping: List[Mapping] = [
+        mapping: list[Mapping] = [
             Mapping(
                 ".*EventTracing\\.evtx_.*",
                 None,
@@ -143,17 +138,15 @@ class TestDfirUnpack(TestCase):
         valid = mappings.valid_mapping[0]
         self.assertTrue(os.path.isfile(valid.file))
 
-        self.assertEqual(
-            valid.original_file, "\\Windows\\Prefetch\\prefetch_sample.evtx"
-        )
+        self.assertEqual(valid.original_file, "\\Windows\\Prefetch\\prefetch_sample.evtx")
 
         shutil.rmtree(temp_folder)
 
-    #python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_archive_file -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_archive_file -v
     def test_archive_file(self):
         temp_folder = os.path.join(TEMP_FOLDER, "TestArchiveFile")
         plugin_file = os.path.join(PLUGIN_FOLDER, "void.xml")
-        mapping: List[Mapping] = [
+        mapping: list[Mapping] = [
             Mapping(
                 "evtx/.*Microsoft-Windows-Kernel-Event.*",
                 None,
@@ -191,7 +184,7 @@ class TestDfirUnpack(TestCase):
             self.assertTrue(os.path.isfile(valid.file))
         shutil.rmtree(temp_folder)
 
-    #python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_from_json -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_from_json -v
     def test_outcome_from_json(self):
         outcome = """{
     "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
@@ -219,7 +212,7 @@ class TestDfirUnpack(TestCase):
             ],
         )
 
-    #python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_from_json_file -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_from_json_file -v
     def test_outcome_from_json_file(self):
         outcome = "test/data/archive/ORC_WorkStation_SampleOrc_162358_Outcome.json"
         orc_outcome = load_archive_metadata(outcome)
@@ -233,7 +226,7 @@ class TestDfirUnpack(TestCase):
             ["test/data/archive/SampleOrc.7z", "test/data/archive/SampleOrc2.7z"],
         )
 
-    #python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_default -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_default -v
     def test_outcome_default(self):
         archive = "test/data/archive/ORC_server_bad_naming_scheme.7z"
         orc_outcome = load_archive_metadata(archive)
@@ -252,7 +245,7 @@ class TestDfirUnpack(TestCase):
         orc_outcome = load_archive_metadata(archive)
         self.assertEqual(orc_outcome.computer_name, machine_name)
 
-    #python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_mutiple -v
+    # python -m unittest test.test_dfir_orc_unpack.TestDfirUnpack.test_outcome_mutiple -v
     def test_outcome_mutiple(self):
         archive = "test/data/archive/ORC_1.7z , test/data/archive/ORC_2.7z , "
         orc_outcome = load_archive_metadata(archive)
