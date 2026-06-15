@@ -624,3 +624,13 @@ mapping:
     mapping_label: shellbags
     output:
       - timeline
+
+  #####
+  ### SECURITY Hive
+  #####
+  - original_file_pattern: '.*\\SECURITY$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\SECURITY
+    output:
+      - timeline
