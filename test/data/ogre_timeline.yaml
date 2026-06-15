@@ -162,7 +162,7 @@ mapping:
       - timeline
 
   # Prefetch
-  - original_file_pattern: 'prefetch.*\.pf$'
+  - archive_file_pattern: '.*\\prefetch\\.*\.pf$'
     plugin_file: $plugin_folder/prefetch.xml
     mapping_label: prefetch
     output:

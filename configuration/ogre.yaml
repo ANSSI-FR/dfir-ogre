@@ -255,7 +255,7 @@ mapping:
       - timeline
 
   # Prefetch
-  - original_file_pattern: 'prefetch.*\.pf$'
+  - archive_file_pattern: '.*\\prefetch\\.*\.pf$'
     plugin_file: $plugin_folder/prefetch.xml
     mapping_label: prefetch
     output:
@@ -408,7 +408,7 @@ mapping:
   # Autoruns Persistence mechanisms from the System Registry - since Ogre version 0.4.1
   - original_file_pattern: '.*\\SYSTEM$'
     plugin_file: $plugin_folder/registry/autoruns_system.xml
-    mapping_label: autorun_hive
+    mapping_label: reg_autoruns
     output:
       - timeline
 
