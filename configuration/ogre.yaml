@@ -241,21 +241,21 @@ mapping:
       - timeline
 
   # Pca App Launch record
-  - original_file_pattern: 'PcaAppLaunch.*\.txt$'
+  - archive_file_pattern: '.*\\PcaAppLaunch.*\.txt$'
     plugin_file: $plugin_folder/pca_app_launch.xml
     mapping_label: pca_app_launch
     output:
       - timeline
 
   # Pca General record
-  - original_file_pattern: 'PcaGeneral.*\.txt$'
+  - archive_file_pattern: '.*\\PcaGeneral.*\.txt$'
     plugin_file: $plugin_folder/pca_general_record.xml
     mapping_label: pca_general_record
     output:
       - timeline
 
   # Prefetch
-  - archive_file_pattern: '.*\\prefetch\\.*\.pf$'
+  - original_file_pattern: '.*\\prefetch\\.*\.pf$'
     plugin_file: $plugin_folder/prefetch.xml
     mapping_label: prefetch
     output:
