@@ -54,10 +54,17 @@ class TestCliHardening(TestCase):
         )
         builder.add_extract_error("extract failed")
         builder.add_result(make_run_result(rows=2, time_s=1.25), "one.txt")
-        builder.add_result(
-            make_run_result(rows=3, time_s=2.0, last_error="bad row", num_errors=1),
-            "two.txt",
-        )
+        with self.assertLogs("ogre.cli", level="ERROR") as logs:
+            builder.add_result(
+                make_run_result(
+                    rows=3,
+                    time_s=2.0,
+                    last_error="bad row",
+                    num_errors=1,
+                ),
+                "two.txt",
+            )
+        self.assertIn("bad row", "\n".join(logs.output))
 
         report = builder.get_report()
 
