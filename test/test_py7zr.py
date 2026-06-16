@@ -1,9 +1,12 @@
+import hashlib
 import os
 import shutil
 from typing import Optional
 from unittest import TestCase, mock
 import py7zr
 from py7zr.io import Py7zIO, WriterFactory
+
+from ogre.sevenzip_rename_factory import need_rename, rename_file
 
 from . import TEMP_FOLDER
 
@@ -29,6 +32,21 @@ class TestPy7zr(TestCase):
 
         self.assertEqual(len(content),13)
         self.assertEqual("Hello world!\n",content)
+
+  def test_need_rename_detects_utf8_file_name_byte_limit(self):
+      short_path = os.path.join("folder", "a" * 240)
+      long_path = os.path.join("folder", "a" * 241)
+
+      self.assertFalse(need_rename(short_path))
+      self.assertTrue(need_rename(long_path))
+
+  def test_rename_file_preserves_folder_and_hashes_file_name(self):
+      file_name = "a" * 241
+      path = os.path.join("folder", file_name)
+
+      expected_hash = hashlib.sha256(file_name.encode("utf-8")).hexdigest()
+
+      self.assertEqual(rename_file(path), os.path.join("folder", expected_hash))
 
 
 class StreamIO(Py7zIO):
