@@ -191,7 +191,7 @@ def prepare_runs(
     conf_file: str,
     archive: str,
     password: str | None,
-    global_var: dict[str, str] = {},  # pyright: ignore[reportCallInDefaultInitializer]
+    global_var: dict[str, str] | None = None,
 ) -> PrepareRunResult:
     """
     Prepare and configure runs based on a configuration file.
@@ -217,6 +217,9 @@ def prepare_runs(
     - PrepareRunResult: A result object containing a list of configured run configurations and any errors encountered.
 
     """
+    if global_var is None:
+        global_var = {}
+
     run_config_map = RunConfigMap()
     # Load and validate the configuration
     configuration, parsers = load_config(conf_file, global_var)

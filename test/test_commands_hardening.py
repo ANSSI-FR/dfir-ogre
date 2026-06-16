@@ -5,6 +5,7 @@ from unittest import mock
 from ogre.commands import (
     clear_plugin_parser_cache,
     load_plugin_parser,
+    prepare_runs,
 )
 
 from . import PLUGIN_FOLDER
@@ -33,3 +34,6 @@ class TestCommandsHardening(TempFolderTestCase):
         plugin_file = os.path.join(PLUGIN_FOLDER, "batched_void.xml")
 
         self.assertEqual(load_plugin_parser(plugin_file), ("Void", True))
+
+    def test_prepare_runs_does_not_keep_mutable_default_global_vars(self):
+        self.assertEqual(prepare_runs.__defaults__, (None,))
