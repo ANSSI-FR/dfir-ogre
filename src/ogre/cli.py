@@ -376,17 +376,15 @@ def run_parser_with_timeout(batch_entry: BatchEntry,config: OgreRunConfiguration
     p.start()
     p.join(config.timeout)
     if p.is_alive():
-        # try to gently close the process
-        p.close()
+        # try to gently stop the process
+        p.terminate()
         p.join(1)
         if p.is_alive():
-            # less nice
-            p.terminate()
+            # brutal
+            p.kill()
             p.join(1)
-            if p.is_alive():
-                # brutal
-                p.kill()
-                p.join(1)
+        if not p.is_alive():
+            p.close()
         raise Exception(
             f"parsing timed out, could not finish in {config.timeout} seconds"
         )
@@ -415,17 +413,15 @@ def run_batch_parser_with_timeout( config: OgreRunConfiguration, manager: SyncMa
     p.start()
     p.join(config.timeout)
     if p.is_alive():
-        # try to gently close the process
-        p.close()
+        # try to gently stop the process
+        p.terminate()
         p.join(1)
         if p.is_alive():
-            # less nice
-            p.terminate()
+            # brutal
+            p.kill()
             p.join(1)
-            if p.is_alive():
-                # brutal
-                p.kill()
-                p.join(1)
+        if not p.is_alive():
+            p.close()
         raise Exception(
             f"parsing timed out, could not finish in {config.timeout} seconds"
         )
