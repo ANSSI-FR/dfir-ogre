@@ -1,8 +1,10 @@
 import json
-from unittest import TestCase
+from types import SimpleNamespace
+from unittest import TestCase, mock
 
+from ogre import cli
 from ogre.cli import DataclassJSONEncoder, ReportBuilder, parse_params
-from ogre.commands import RunResult
+from ogre.commands import OgreRunConfiguration, RunResult
 
 
 def make_run_result(
@@ -94,3 +96,75 @@ class TestCliHardening(TestCase):
         self.assertEqual(encoded["computer"], "host1")
         self.assertEqual(encoded["summary"][0]["rows"], 4)
         self.assertEqual(encoded["run_results"][0]["metadata"]["computer"], "host1")
+
+    def test_run_parser_with_timeout_returns_child_result(self):
+        expected = make_run_result(rows=1, time_s=0.5)
+
+        class FakeManager:
+            def list(self):
+                return []
+
+        class FinishedProcess:
+            def __init__(self, target, args):
+                self.args = args
+
+            def start(self):
+                self.args[2].append(expected)
+
+            def join(self, timeout=None):
+                return None
+
+            def is_alive(self):
+                return False
+
+        config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
+        batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
+
+        with mock.patch("ogre.cli.multiprocessing.Process", FinishedProcess):
+            result = cli.run_parser_with_timeout(batch_entry, config, FakeManager())
+
+        self.assertIs(result, expected)
+
+    def test_run_parser_with_timeout_terminates_hanging_process(self):
+        instances = []
+
+        class FakeManager:
+            def list(self):
+                return []
+
+        class HangingProcess:
+            def __init__(self, target, args):
+                self.closed = False
+                self.terminated = False
+                self.killed = False
+                instances.append(self)
+
+            def start(self):
+                return None
+
+            def join(self, timeout=None):
+                return None
+
+            def is_alive(self):
+                return True
+
+            def close(self):
+                self.closed = True
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+
+        config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
+        batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
+
+        with mock.patch("ogre.cli.multiprocessing.Process", HangingProcess):
+            with self.assertRaises(Exception) as context:
+                cli.run_parser_with_timeout(batch_entry, config, FakeManager())
+
+        self.assertIn("parsing timed out", str(context.exception))
+        self.assertTrue(instances[0].closed)
+        self.assertTrue(instances[0].terminated)
+        self.assertTrue(instances[0].killed)
