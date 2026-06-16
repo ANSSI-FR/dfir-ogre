@@ -1,10 +1,14 @@
 import json
+import os
+import sys
 from types import SimpleNamespace
-from unittest import TestCase, mock
+from unittest import mock
 
 from ogre import cli
 from ogre.cli import DataclassJSONEncoder, ReportBuilder, parse_params
 from ogre.commands import OgreRunConfiguration, RunResult
+
+from .hardening_helpers import TempFolderTestCase
 
 
 def make_run_result(
@@ -29,7 +33,9 @@ def make_run_result(
     )
 
 
-class TestCliHardening(TestCase):
+class TestCliHardening(TempFolderTestCase):
+    temp_name = "cli_hardening"
+
     def test_parse_params_preserves_current_string_conversion(self):
         self.assertEqual(parse_params(None), {})
         self.assertEqual(parse_params(""), {})
@@ -175,6 +181,81 @@ class TestCliHardening(TestCase):
         self.assertTrue(instances[0].closed)
         self.assertTrue(instances[0].terminated)
         self.assertTrue(instances[0].killed)
+
+    def test_main_dispatches_list_subcommand(self):
+        configuration = os.path.join("test", "data", "test_commands.yaml")
+
+        with mock.patch("ogre.cli.display_plugin_list") as handler:
+            with mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "dfir-ogre",
+                    "list",
+                    "--configuration",
+                    configuration,
+                    "--case",
+                    "case1",
+                ],
+            ):
+                cli.main()
+
+        handler.assert_called_once()
+        args = handler.call_args.args[0]
+        self.assertEqual(args.configuration, configuration)
+        self.assertEqual(args.case, "case1")
+
+    def test_parse_archive_writes_report_and_cleans_tmp_folder(self):
+        report_folder = os.path.join(self.temp_folder, "report")
+        output_folder = os.path.join(self.temp_folder, "output")
+        tmp_folder = os.path.join(self.temp_folder, "tmp")
+        os.makedirs(output_folder, exist_ok=True)
+        os.makedirs(tmp_folder, exist_ok=True)
+
+        run_config = OgreRunConfiguration(
+            [SimpleNamespace(file="input.txt")],
+            "plugin.xml",
+            "mapping",
+            "module",
+            "Parser",
+            False,
+            5,
+        )
+        prepared = SimpleNamespace(
+            errors=[],
+            runs=SimpleNamespace(map={"plugin.xml": run_config}),
+            computer="host1",
+            orc_id="orc1",
+            output_folder=output_folder,
+            report_folder=report_folder,
+            tmp_folder=tmp_folder,
+        )
+
+        with mock.patch("ogre.cli.prepare_runs", return_value=prepared):
+            with mock.patch("ogre.cli.multiprocessing.Manager", return_value=object()):
+                with mock.patch(
+                    "ogre.cli.run_parser_with_timeout",
+                    return_value=make_run_result(rows=6, time_s=1.0),
+                ) as runner:
+                    report = cli.parse_archive(
+                        "config.yaml",
+                        "archive.7z",
+                        {"case": "case1"},
+                        None,
+                        "dfir-ogre orc",
+                    )
+
+        runner.assert_called_once()
+        self.assertEqual(report.computer, "host1")
+        self.assertEqual(report.summary[0].rows, 6)
+        self.assertFalse(os.path.exists(tmp_folder))
+
+        report_file = os.path.join(report_folder, "report_host1_orc1.json")
+        with open(report_file) as f:
+            report_json = json.load(f)
+
+        self.assertEqual(report_json["computer"], "host1")
+        self.assertEqual(report_json["summary"][0]["rows"], 6)
 
     def test_run_batch_parser_with_timeout_terminates_hanging_process(self):
         instances = []
