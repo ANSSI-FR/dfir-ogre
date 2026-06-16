@@ -9,6 +9,7 @@ wheels/
 .coverage
 uv.lock
 .tmp/
+.worktrees/
 htmlcov/
 # Virtual environments
 .venv
