@@ -104,6 +104,10 @@ def load_config(
 PLUGIN_PARSER_CACHE: dict[str, tuple[str,bool]] = {}
 
 
+def clear_plugin_parser_cache() -> None:
+    PLUGIN_PARSER_CACHE.clear()
+
+
 def load_plugin_parser(plugin_file: str) -> tuple[str,bool]:
     plugin_parser = PLUGIN_PARSER_CACHE.get(plugin_file, None)
     if plugin_parser is None:
