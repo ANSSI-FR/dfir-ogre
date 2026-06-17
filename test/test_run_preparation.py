@@ -5,8 +5,10 @@ from unittest import TestCase
 from dfir_ogre_common import OutputConfiguration
 
 from ogre.configuration import Configuration, Mapping
-from ogre.dfir_orc_unpack import OrcOutcome
-from ogre.run_preparation import VariableResolver
+from ogre.dfir_orc_unpack import FileMapping, OrcOutcome
+from ogre.run_preparation import BatchEntryBuilder, ParserSelection, VariableResolver
+
+from .hardening_helpers import TempFolderTestCase
 
 
 def _mapping(**overrides):
@@ -166,3 +168,105 @@ class TestVariableResolver(TestCase):
         self.assertEqual(params["folder"], ".tmp/output/SampleOrc/test")
         self.assertEqual(params["constant"], "7")
         self.assertEqual(mapping.plugin_file, "$plugin_folder/void.xml")
+
+
+class TestBatchEntryBuilder(TempFolderTestCase):
+    def test_build_entry_preserves_metadata_and_resolved_output_contract(self):
+        config = _configuration()
+        outcome = _outcome()
+        resolver = VariableResolver(config, outcome)
+        archive_output = resolver.resolve_archive_output(
+            config.output["rawjson"],
+            "test/data/archive/SampleOrc.7z",
+        )
+        archive_outputs = {"rawjson": archive_output}
+        mapping = config.mapping[0]
+        file_mapping = FileMapping(
+            file=os.path.join(self.temp_folder, "Event.7z", "BITS_jobs.txt"),
+            archive_name="Event.7z",
+            archive_file="BITS_jobs.txt",
+            original_file="\\Windows\\System32\\BITS_jobs.txt",
+            original_creation_date="2021-11-30T11:36:15.818000+00:00",
+            original_modification_date="2021-11-30T11:36:20.364000+00:00",
+            mapping=mapping,
+            vss="{00000000-0000-0000-0000-000000000000}",
+            error=None,
+        )
+
+        entry = BatchEntryBuilder(config, outcome, resolver).build(
+            archive="test/data/archive/SampleOrc.7z",
+            archive_outputs=archive_outputs,
+            file_mapping=file_mapping,
+            selection=ParserSelection(
+                plugin_file="test/plugin_config/void.xml",
+                parser="Void",
+                module="ogre.void_parser",
+                batch=False,
+            ),
+        )
+
+        self.assertEqual(entry.file, os.path.abspath(file_mapping.file))
+        self.assertEqual(entry.run_config.force_snake_case, True)
+        self.assertEqual(
+            entry.run_config.params["folder"], ".tmp/output/SampleOrc/test"
+        )
+        self.assertEqual(
+            entry.run_config.output[0].output_folder,
+            ".tmp/output/SampleOrc/text_output",
+        )
+        self.assertEqual(
+            entry.run_config.output[0].base_file_name,
+            "Void_BITS_jobs_20250904_221144",
+        )
+
+        metadata = entry.metadata
+        self.assertEqual(metadata.computer, "SampleOrc")
+        self.assertEqual(metadata.folder, "archive")
+        self.assertEqual(metadata.archive, "SampleOrc.7z")
+        self.assertEqual(metadata.subarchive, "Event.7z")
+        self.assertEqual(
+            metadata.orc_id, "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}"
+        )
+        self.assertEqual(metadata.archive_filename, "BITS_jobs.txt")
+        self.assertEqual(
+            metadata.original_filename, "\\Windows\\System32\\BITS_jobs.txt"
+        )
+        self.assertEqual(metadata.vss, "{00000000-0000-0000-0000-000000000000}")
+        self.assertEqual(
+            metadata.creation_date.isoformat(), "2021-11-30T11:36:15.818000+00:00"
+        )
+        self.assertEqual(
+            metadata.modif_date.isoformat(), "2021-11-30T11:36:20.364000+00:00"
+        )
+
+    def test_build_entry_raises_key_error_for_unknown_output_reference(self):
+        mapping = _mapping(output=["missing_output"])
+        config = _configuration(mapping=[mapping])
+        outcome = _outcome()
+        resolver = VariableResolver(config, outcome)
+        file_mapping = FileMapping(
+            file=os.path.join(self.temp_folder, "sample.txt"),
+            archive_name="",
+            archive_file="sample.txt",
+            original_file=None,
+            original_creation_date=None,
+            original_modification_date=None,
+            mapping=mapping,
+            vss=None,
+            error=None,
+        )
+
+        with self.assertRaises(KeyError) as context:
+            BatchEntryBuilder(config, outcome, resolver).build(
+                archive="test/data/archive/SampleOrc.7z",
+                archive_outputs={},
+                file_mapping=file_mapping,
+                selection=ParserSelection(
+                    plugin_file="test/plugin_config/void.xml",
+                    parser="Void",
+                    module="ogre.void_parser",
+                    batch=False,
+                ),
+            )
+
+        self.assertEqual(context.exception.args[0], "missing_output")

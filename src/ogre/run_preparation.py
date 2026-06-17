@@ -1,10 +1,14 @@
 import copy
+import os
+from dataclasses import dataclass
+from datetime import timezone
 from pathlib import Path
 
-from dfir_ogre_common import OutputConfiguration
+import dateutil.parser
+from dfir_ogre_common import BatchEntry, Metadata, OutputConfiguration, RunConfiguration
 
 from .configuration import Configuration, Mapping
-from .dfir_orc_unpack import OrcOutcome
+from .dfir_orc_unpack import FileMapping, OrcOutcome
 
 
 class VariableResolver:
@@ -108,3 +112,77 @@ class VariableResolver:
             else:
                 additional_params[key] = str(value)
         return additional_params
+
+
+@dataclass(frozen=True)
+class ParserSelection:
+    plugin_file: str
+    parser: str
+    module: str
+    batch: bool
+
+
+class BatchEntryBuilder:
+    def __init__(
+        self,
+        configuration: Configuration,
+        outcome: OrcOutcome,
+        resolver: VariableResolver,
+    ):
+        self.configuration = configuration
+        self.outcome = outcome
+        self.resolver = resolver
+
+    def build(
+        self,
+        archive: str,
+        archive_outputs: dict[str, OutputConfiguration],
+        file_mapping: FileMapping,
+        selection: ParserSelection,
+    ) -> BatchEntry:
+        mapping = file_mapping.mapping
+        output = [
+            self.resolver.resolve_run_output(
+                archive_outputs[out_name],
+                mapping.mapping_label,
+                selection.parser,
+                file_mapping.file,
+            )
+            for out_name in mapping.output
+        ]
+        run_config = RunConfiguration(
+            output,
+            mapping.force_nake_case,
+            self.resolver.resolve_mapping_params(mapping, archive),
+        )
+        metadata = self._build_metadata(archive, file_mapping)
+        return BatchEntry(os.path.abspath(file_mapping.file), run_config, metadata)
+
+    def _build_metadata(self, archive: str, file_mapping: FileMapping) -> Metadata:
+        metadata = Metadata(self.outcome.computer_name)
+        archive_abs_path = os.path.abspath(archive)
+        folder = os.path.basename(os.path.dirname(archive_abs_path))
+        archive_name = os.path.basename(archive)
+        subarchive_name = Path(file_mapping.archive_name).stem
+
+        metadata.folder = folder
+        metadata.archive = archive_name
+        if archive != subarchive_name and subarchive_name:
+            metadata.subarchive = subarchive_name + ".7z"
+
+        metadata.orc_start_date = self.outcome.date
+        metadata.orc_id = self.outcome.id
+        metadata.archive_filename = file_mapping.archive_file
+        metadata.original_filename = file_mapping.original_file
+        metadata.vss = file_mapping.vss
+
+        if file_mapping.original_creation_date:
+            metadata.creation_date = dateutil.parser.isoparse(
+                file_mapping.original_creation_date
+            ).astimezone(timezone.utc)
+        if file_mapping.original_modification_date:
+            metadata.modif_date = dateutil.parser.isoparse(
+                file_mapping.original_modification_date
+            ).astimezone(timezone.utc)
+
+        return metadata
