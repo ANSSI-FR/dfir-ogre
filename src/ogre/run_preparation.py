@@ -21,7 +21,13 @@ from dfir_ogre_common import (
 )
 
 from .configuration import Configuration, Mapping, build_configuration
-from .dfir_orc_unpack import FileMapping, OrcOutcome, UnpackResult, unpack_dfir_orc
+from .dfir_orc_unpack import (
+    FileMapping,
+    OrcOutcome,
+    UnpackResult,
+    load_archive_metadata,
+    unpack_dfir_orc,
+)
 
 
 class VariableResolver:
@@ -443,3 +449,80 @@ def load_plugins(plugin_prefixes: list[str]) -> dict[str, PluginDefinition]:
         parser_dict[parser_name] = PluginDefinition(parser_name, module_name, True)
 
     return parser_dict
+
+
+@dataclass
+class PrepareRunResult:
+    archive: str
+    runs: RunConfigGrouper
+    errors: list[str]
+    computer: str
+    orc_id: str
+    output_folder: str
+    report_folder: str
+    tmp_folder: str
+
+
+@dataclass
+class RunPreparationContext:
+    conf_file: str
+    archive: str
+    password: str | None
+    global_vars: dict[str, str]
+    configuration: Configuration
+    parsers: dict[str, PluginDefinition]
+    outcome: OrcOutcome
+
+    @classmethod
+    def load(
+        cls,
+        conf_file: str,
+        archive: str,
+        password: str | None,
+        global_var: dict[str, str] | None,
+    ) -> "RunPreparationContext":
+        request_globals = dict(global_var or {})
+        configuration, parsers = load_config(conf_file, request_globals)
+        outcome = load_archive_metadata(archive)
+        request_globals["computer_name"] = outcome.computer_name
+        request_globals["orc_id"] = outcome.id
+        request_globals["orc_start_date"] = outcome.date.isoformat()
+        return cls(
+            conf_file,
+            archive,
+            password,
+            request_globals,
+            configuration,
+            parsers,
+            outcome,
+        )
+
+
+def prepare_runs(
+    conf_file: str,
+    archive: str,
+    password: str | None,
+    global_var: dict[str, str] | None = None,
+) -> PrepareRunResult:
+    context = RunPreparationContext.load(conf_file, archive, password, global_var)
+    resolver = VariableResolver(context.configuration, context.outcome)
+    report_folder = resolver.resolve_report_folder()
+    planner = ArchiveRunPlanner(
+        configuration=context.configuration,
+        outcome=context.outcome,
+        password=context.password,
+        parsers=context.parsers,
+        resolver=resolver,
+        load_parser=load_plugin_parser,
+    )
+    plan = planner.plan()
+    return PrepareRunResult(
+        plan.last_archive,
+        plan.runs,
+        plan.errors,
+        context.outcome.computer_name,
+        context.outcome.id,
+        context.configuration.output_folder,
+        report_folder,
+        context.configuration.temp_folder,
+    )

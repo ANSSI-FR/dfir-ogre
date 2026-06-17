@@ -12,11 +12,13 @@ from ogre.run_preparation import (
     ParserSelection,
     PluginDefinition,
     RunConfigGrouper,
+    RunPreparationContext,
     VariableResolver,
     clear_plugin_parser_cache,
     load_config,
     load_plugin_parser,
     load_plugins,
+    prepare_runs,
 )
 
 from .hardening_helpers import TempFolderTestCase
@@ -437,3 +439,97 @@ class TestRunPreparationConfigLoading(TempFolderTestCase):
 
         self.assertIn("Void", plugins)
         self.assertEqual(plugins["Void"].module, "ogre.void_parser")
+
+
+class TestRunPreparationOrchestration(TempFolderTestCase):
+    def test_context_load_copies_global_vars_and_adds_derived_values(self):
+        global_vars = {"temp_folder": self.temp_folder}
+
+        context = RunPreparationContext.load(
+            os.path.join("test", "data", "test_commands_run.yaml"),
+            os.path.join("test", "data", "archive", "SampleOrc.7z"),
+            None,
+            global_vars,
+        )
+
+        self.assertEqual(global_vars, {"temp_folder": self.temp_folder})
+        self.assertEqual(context.global_vars["computer_name"], "SampleOrc")
+        self.assertEqual(context.global_vars["orc_id"], context.outcome.id)
+        self.assertEqual(
+            context.global_vars["orc_start_date"], context.outcome.date.isoformat()
+        )
+        self.assertEqual(
+            context.configuration.temp_folder.startswith(self.temp_folder), True
+        )
+        self.assertIn("Void", context.parsers)
+
+    def test_prepare_runs_preserves_existing_grouping_and_metadata_contract(self):
+        result = prepare_runs(
+            os.path.join("test", "data", "test_commands_run.yaml"),
+            os.path.join("test", "data", "archive", "SampleOrc.7z"),
+            None,
+            {"temp_folder": self.temp_folder},
+        )
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.computer, "SampleOrc")
+        self.assertEqual(result.output_folder, ".tmp/output")
+        self.assertEqual(result.report_folder, ".tmp/output")
+        self.assertEqual(len(result.runs.map), 1)
+
+        run = next(iter(result.runs.map.values()))
+        self.assertEqual(run.mapping_label, "arp")
+        self.assertEqual(run.parser, "Void")
+        self.assertEqual(run.module, "ogre.void_parser")
+        self.assertFalse(run.batch)
+        self.assertEqual(len(run.batch_entries), 2)
+
+        archive_entry = next(
+            entry
+            for entry in run.batch_entries
+            if entry.metadata.archive_filename == "arp_cache.txt"
+        )
+        self.assertEqual(archive_entry.metadata.computer, "SampleOrc")
+        self.assertEqual(archive_entry.metadata.archive, "SampleOrc.7z")
+        self.assertIsNone(archive_entry.metadata.subarchive)
+        self.assertIsNone(archive_entry.metadata.original_filename)
+        self.assertEqual(archive_entry.run_config.output[0].output_folder, "event")
+        self.assertEqual(archive_entry.run_config.output[0].base_file_name, "test")
+
+        original_entry = next(
+            entry for entry in run.batch_entries if entry.metadata.original_filename
+        )
+        self.assertEqual(original_entry.metadata.computer, "SampleOrc")
+        self.assertEqual(original_entry.metadata.archive, "SampleOrc.7z")
+        self.assertEqual(original_entry.metadata.subarchive, "Event.7z")
+        self.assertIn(
+            "Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
+            original_entry.metadata.archive_filename,
+        )
+        self.assertEqual(
+            original_entry.metadata.original_filename,
+            "\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
+        )
+        self.assertEqual(
+            original_entry.metadata.creation_date.isoformat(),
+            "2021-11-30T11:36:15.818000+00:00",
+        )
+        self.assertEqual(
+            original_entry.metadata.modif_date.isoformat(),
+            "2021-11-30T11:36:20.364000+00:00",
+        )
+        self.assertEqual(
+            original_entry.metadata.vss,
+            "{00000000-0000-0000-0000-000000000000}",
+        )
+
+    def test_prepare_runs_preserves_unknown_output_key_error(self):
+        with self.assertRaises(KeyError) as context:
+            prepare_runs(
+                os.path.join("test", "data", "test_commands_bad_output.yaml"),
+                os.path.join("test", "data", "archive", "SampleOrc.7z"),
+                None,
+                {"temp_folder": self.temp_folder},
+            )
+
+        self.assertEqual(context.exception.args[0], "bad_output")
