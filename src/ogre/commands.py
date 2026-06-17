@@ -1,11 +1,7 @@
 import copy
 import importlib
 import os
-import pkgutil
-import re
 import time
-import uuid
-import xml.etree.ElementTree as ET
 import dateutil.parser
 
 from dataclasses import dataclass
@@ -18,115 +14,18 @@ from dfir_ogre_common import BatchEntry,Metadata, OgreBatchedPlugin, OgrePlugin,
 
 from .configuration import Configuration, build_configuration
 from .dfir_orc_unpack import load_archive_metadata, unpack_dfir_orc
+from .run_preparation import (
+    OgreRunConfiguration,
+    PluginDefinition,
+    RunConfigGrouper,
+    clear_plugin_parser_cache,
+    load_config,
+    load_plugin_parser,
+    load_plugins,
+)
 
 CASE_PARAM = "case"
-
-@dataclass
-class OgreRunConfiguration:
-    batch_entries: list[BatchEntry]
-    plugin_file: str
-    mapping_label: str
-    module: str
-    parser: str
-    batch: bool
-    timeout: int
-
-class RunConfigMap:
-    map: dict[str, OgreRunConfiguration ]
-    def __init__(self):
-        self.map = {}
-
-    def add_configuration(self, batch_entry: BatchEntry, plugin_file: str,   mapping_label: str,  module: str,parser: str,batch: bool,timeout: int ):
-        entry = self.map.get(plugin_file, None)
-        if entry:
-            entry.batch_entries.append(batch_entry)
-        else:
-            self.map[plugin_file] = OgreRunConfiguration([batch_entry],plugin_file,mapping_label,module,parser, batch, timeout )
-
-
-def load_config(
-    conf_file: str, global_var: dict[str, str]
-) -> tuple[Configuration, dict[str, 'PluginDefinition']]:
-    """
-    Load and validate a YAML configuration file. Ensures:
-    1. All specified plugins are available via registered prefixes
-    2. All referenced outputs exist in the configuration
-    3. All regular expressions are valid
-
-    The function:
-    1. Loads YAML configuration
-    2. Builds configuration object with global variable overrides
-    3. Loads plugins from configured prefixes
-    4. Validates all mappings in the configuration
-
-
-    Parameters:
-    - conf_file (str): Path to the YAML configuration file
-    - global_var (Dict[str, str]): Global variables that override config parameters
-
-    Returns:
-    - Tuple[Configuration, Dict[str, str]]:
-        (validated configuration object, dictionary of loaded plugins)
-
-    Raises:
-    - TypeError: If:
-        - A required parser plugin is not loaded
-        - An output reference is invalid/undefined
-    """
-
-    with open(conf_file) as conf:
-        config_dict = yaml.safe_load(conf)
-
-    config = build_configuration(config_dict, global_var)
-    plugins = _load_plugins(config.plugin_prefixes)
-
-    for map in config.mapping:
-        if map.archive_file_pattern:
-            try:
-                _ = re.compile(map.archive_file_pattern, re.IGNORECASE)
-            except Exception as e:
-                raise Exception(
-                    f"{e} in archive_file_pattern regex:'{map.archive_file_pattern}', mapping_label:'{map.mapping_label}'"
-                )
-
-        if map.original_file_pattern:
-            try:
-                _ =  re.compile(map.original_file_pattern, re.IGNORECASE)
-            except Exception as e:
-                raise Exception(
-                    f"{e} in original_file_pattern regex:'{map.original_file_pattern}', mapping_label:'{map.mapping_label}'"
-                )
-
-    return config, plugins
-
-
-# A plugin name cache extracted for the plugin xml file, to avoid having to read the xml for every run
-PLUGIN_PARSER_CACHE: dict[str, tuple[str,bool]] = {}
-
-
-def clear_plugin_parser_cache() -> None:
-    PLUGIN_PARSER_CACHE.clear()
-
-
-def load_plugin_parser(plugin_file: str) -> tuple[str,bool]:
-    plugin_parser = PLUGIN_PARSER_CACHE.get(plugin_file, None)
-    if plugin_parser is None:
-
-        tree = ET.parse(plugin_file)
-        root = tree.getroot()
-
-        plugin_name = root.attrib.get("parser")
-        batch = root.attrib.get("batch")
-        is_batched = batch is not None
-
-        if not plugin_name:
-            raise Exception(
-                f"'parser' attribute not found in plugin file :'{plugin_file}'"
-            )
-        plugin_parser = (plugin_name, is_batched)
-        PLUGIN_PARSER_CACHE[plugin_file] = plugin_parser
-
-    return plugin_parser
+RunConfigMap = RunConfigGrouper
 
 
 def list_parsers(
@@ -154,7 +53,7 @@ def list_parsers(
         config_dict = yaml.safe_load(conf)
 
     config = build_configuration(config_dict, global_vars)
-    _load_plugins(config.plugin_prefixes)
+    load_plugins(config.plugin_prefixes)
 
     parser_dict = {}
     descriptions = []
@@ -597,64 +496,6 @@ def run_batch_parser(config: OgreRunConfiguration) -> RunResult:
         run_result.row_sec = round(run_result.rows / run_result.time_s, 0)
         run_result.time_s = round(run_result.time_s, 3)
         return run_result
-
-@dataclass
-class PluginDefinition:
-    parser_name:str
-    module_name: str
-    batch: bool
-
-def _load_plugins(plugin_prefixes: list[str]) -> dict[str, PluginDefinition]:
-    """
-    Load plugins with modules matching given prefixes and register their command parsers.
-
-    1. Imports all modules starting with the specified prefixes
-    2. Registers all subclasses of OgrePlugin
-    3. Creates a mapping from parser command names to module paths
-    4. Raises an error for duplicate command names to ensure uniqueness
-
-    Args:
-        plugin_prefixes: List of module name prefixes to search for plugins
-
-    Returns:
-        Dictionary mapping parser command names to their module paths
-
-    Raises:
-        KeyError: If multiple plugins define the same command name
-    """
-
-    for _, name, _ in pkgutil.iter_modules():
-        for prefix in plugin_prefixes:
-            if name.startswith(prefix):
-                importlib.import_module(name)
-    parser_dict:dict[str, PluginDefinition] = {}
-
-    for parser in OgrePlugin.__subclasses__():
-        module_name = parser.__module__
-        parser_name = parser().description().get_command()
-
-        entry_module = parser_dict.get(parser_name)
-        if entry_module:
-            raise KeyError(
-                f"Parser name: '{parser_name}' from module: '{module_name}' is already defined in module: '{entry_module}'"
-            )
-        else:
-            parser_dict[parser_name] = PluginDefinition(parser_name,module_name, False)
-
-    for parser in OgreBatchedPlugin.__subclasses__():
-            module_name = parser.__module__
-            parser_name = parser().description().get_command()
-
-            entry_module = parser_dict.get(parser_name)
-            if entry_module:
-                raise KeyError(
-                    f"Parser name: '{parser_name}' from module: '{module_name}' is already defined in module: '{entry_module}'"
-                )
-            else:
-                parser_dict[parser_name] = PluginDefinition(parser_name,module_name, True)
-
-
-    return parser_dict
 
 def metadata_to_dict(metadata: Metadata)->dict:
     # transform rust metadata into a dict to be able to serialize it in Json

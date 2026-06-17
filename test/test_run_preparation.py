@@ -13,6 +13,10 @@ from ogre.run_preparation import (
     PluginDefinition,
     RunConfigGrouper,
     VariableResolver,
+    clear_plugin_parser_cache,
+    load_config,
+    load_plugin_parser,
+    load_plugins,
 )
 
 from .hardening_helpers import TempFolderTestCase
@@ -402,3 +406,34 @@ class TestArchiveRunPlanner(TempFolderTestCase):
         self.assertEqual(run.parser, "Void")
         self.assertEqual(run.module, "ogre.void_parser")
         self.assertEqual(len(run.batch_entries), 1)
+
+
+class TestRunPreparationConfigLoading(TempFolderTestCase):
+    def setUp(self):
+        super().setUp()
+        clear_plugin_parser_cache()
+
+    def tearDown(self):
+        clear_plugin_parser_cache()
+        super().tearDown()
+
+    def test_load_config_validates_regex_and_outputs(self):
+        config, plugins = load_config(
+            os.path.join("test", "data", "test_commands.yaml"),
+            {"temp_folder": self.temp_folder},
+        )
+
+        self.assertEqual(config.case, "test")
+        self.assertIn("Void", plugins)
+
+    def test_load_plugin_parser_cache_is_owned_by_run_preparation(self):
+        plugin_file = os.path.join("test", "plugin_config", "void.xml")
+
+        self.assertEqual(load_plugin_parser(plugin_file), ("Void", False))
+        self.assertEqual(load_plugin_parser(plugin_file), ("Void", False))
+
+    def test_load_plugins_discovers_test_void_parser(self):
+        plugins = load_plugins(["test"])
+
+        self.assertIn("Void", plugins)
+        self.assertEqual(plugins["Void"].module, "ogre.void_parser")

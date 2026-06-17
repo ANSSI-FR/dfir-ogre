@@ -24,7 +24,7 @@ class TestCommandsHardening(TempFolderTestCase):
     def test_load_plugin_parser_caches_xml_parse_result(self):
         plugin_file = os.path.join(PLUGIN_FOLDER, "void.xml")
 
-        with mock.patch("ogre.commands.ET.parse", wraps=ET.parse) as parse:
+        with mock.patch("ogre.run_preparation.ET.parse", wraps=ET.parse) as parse:
             self.assertEqual(load_plugin_parser(plugin_file), ("Void", False))
             self.assertEqual(load_plugin_parser(plugin_file), ("Void", False))
 

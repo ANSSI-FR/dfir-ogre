@@ -1,14 +1,26 @@
 import copy
+import importlib
 import os
+import pkgutil
+import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import timezone
 from pathlib import Path
 from typing import Callable
 
 import dateutil.parser
-from dfir_ogre_common import BatchEntry, Metadata, OutputConfiguration, RunConfiguration
+import yaml
+from dfir_ogre_common import (
+    BatchEntry,
+    Metadata,
+    OgreBatchedPlugin,
+    OgrePlugin,
+    OutputConfiguration,
+    RunConfiguration,
+)
 
-from .configuration import Configuration, Mapping
+from .configuration import Configuration, Mapping, build_configuration
 from .dfir_orc_unpack import FileMapping, OrcOutcome, UnpackResult, unpack_dfir_orc
 
 
@@ -195,6 +207,10 @@ class PluginDefinition:
     module: str
     batch: bool
 
+    @property
+    def module_name(self) -> str:
+        return self.module
+
 
 @dataclass
 class OgreRunConfiguration:
@@ -227,6 +243,26 @@ class RunConfigGrouper:
             return
         self.map[plugin_file] = OgreRunConfiguration(
             [batch_entry],
+            plugin_file,
+            mapping_label,
+            module,
+            parser,
+            batch,
+            timeout,
+        )
+
+    def add_configuration(
+        self,
+        batch_entry: BatchEntry,
+        plugin_file: str,
+        mapping_label: str,
+        module: str,
+        parser: str,
+        batch: bool,
+        timeout: int,
+    ) -> None:
+        self.add(
+            batch_entry,
             plugin_file,
             mapping_label,
             module,
@@ -320,3 +356,90 @@ class ArchiveRunPlanner:
                 )
 
         return ArchivePlanResult(grouper, errors, last_archive)
+
+
+def load_config(
+    conf_file: str,
+    global_var: dict[str, str],
+) -> tuple[Configuration, dict[str, PluginDefinition]]:
+    with open(conf_file) as conf:
+        config_dict = yaml.safe_load(conf)
+
+    config = build_configuration(config_dict, global_var)
+    plugins = load_plugins(config.plugin_prefixes)
+
+    for mapping in config.mapping:
+        if mapping.archive_file_pattern:
+            try:
+                re.compile(mapping.archive_file_pattern, re.IGNORECASE)
+            except Exception as error:
+                raise Exception(
+                    f"{error} in archive_file_pattern regex:'{mapping.archive_file_pattern}', mapping_label:'{mapping.mapping_label}'"
+                )
+
+        if mapping.original_file_pattern:
+            try:
+                re.compile(mapping.original_file_pattern, re.IGNORECASE)
+            except Exception as error:
+                raise Exception(
+                    f"{error} in original_file_pattern regex:'{mapping.original_file_pattern}', mapping_label:'{mapping.mapping_label}'"
+                )
+
+    return config, plugins
+
+
+PLUGIN_PARSER_CACHE: dict[str, tuple[str, bool]] = {}
+
+
+def clear_plugin_parser_cache() -> None:
+    PLUGIN_PARSER_CACHE.clear()
+
+
+def load_plugin_parser(plugin_file: str) -> tuple[str, bool]:
+    plugin_parser = PLUGIN_PARSER_CACHE.get(plugin_file)
+    if plugin_parser is None:
+        tree = ET.parse(plugin_file)
+        root = tree.getroot()
+        plugin_name = root.attrib.get("parser")
+        batch = root.attrib.get("batch")
+        is_batched = batch is not None
+
+        if not plugin_name:
+            raise Exception(
+                f"'parser' attribute not found in plugin file :'{plugin_file}'"
+            )
+        plugin_parser = (plugin_name, is_batched)
+        PLUGIN_PARSER_CACHE[plugin_file] = plugin_parser
+
+    return plugin_parser
+
+
+def load_plugins(plugin_prefixes: list[str]) -> dict[str, PluginDefinition]:
+    for _, name, _ in pkgutil.iter_modules():
+        for prefix in plugin_prefixes:
+            if name.startswith(prefix):
+                importlib.import_module(name)
+
+    parser_dict: dict[str, PluginDefinition] = {}
+
+    for parser in OgrePlugin.__subclasses__():
+        module_name = parser.__module__
+        parser_name = parser().description().get_command()
+        entry = parser_dict.get(parser_name)
+        if entry:
+            raise KeyError(
+                f"Parser name: '{parser_name}' from module: '{module_name}' is already defined in module: '{entry}'"
+            )
+        parser_dict[parser_name] = PluginDefinition(parser_name, module_name, False)
+
+    for parser in OgreBatchedPlugin.__subclasses__():
+        module_name = parser.__module__
+        parser_name = parser().description().get_command()
+        entry = parser_dict.get(parser_name)
+        if entry:
+            raise KeyError(
+                f"Parser name: '{parser_name}' from module: '{module_name}' is already defined in module: '{entry}'"
+            )
+        parser_dict[parser_name] = PluginDefinition(parser_name, module_name, True)
+
+    return parser_dict
