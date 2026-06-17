@@ -3,12 +3,13 @@ import os
 from dataclasses import dataclass
 from datetime import timezone
 from pathlib import Path
+from typing import Callable
 
 import dateutil.parser
 from dfir_ogre_common import BatchEntry, Metadata, OutputConfiguration, RunConfiguration
 
 from .configuration import Configuration, Mapping
-from .dfir_orc_unpack import FileMapping, OrcOutcome
+from .dfir_orc_unpack import FileMapping, OrcOutcome, UnpackResult, unpack_dfir_orc
 
 
 class VariableResolver:
@@ -186,3 +187,136 @@ class BatchEntryBuilder:
             ).astimezone(timezone.utc)
 
         return metadata
+
+
+@dataclass(frozen=True)
+class PluginDefinition:
+    parser_name: str
+    module: str
+    batch: bool
+
+
+@dataclass
+class OgreRunConfiguration:
+    batch_entries: list[BatchEntry]
+    plugin_file: str
+    mapping_label: str
+    module: str
+    parser: str
+    batch: bool
+    timeout: int
+
+
+class RunConfigGrouper:
+    def __init__(self):
+        self.map: dict[str, OgreRunConfiguration] = {}
+
+    def add(
+        self,
+        batch_entry: BatchEntry,
+        plugin_file: str,
+        mapping_label: str,
+        module: str,
+        parser: str,
+        batch: bool,
+        timeout: int,
+    ) -> None:
+        entry = self.map.get(plugin_file)
+        if entry:
+            entry.batch_entries.append(batch_entry)
+            return
+        self.map[plugin_file] = OgreRunConfiguration(
+            [batch_entry],
+            plugin_file,
+            mapping_label,
+            module,
+            parser,
+            batch,
+            timeout,
+        )
+
+
+@dataclass
+class ArchivePlanResult:
+    runs: RunConfigGrouper
+    errors: list[str]
+    last_archive: str
+
+
+class ArchiveRunPlanner:
+    def __init__(
+        self,
+        configuration: Configuration,
+        outcome: OrcOutcome,
+        password: str | None,
+        parsers: dict[str, PluginDefinition],
+        resolver: VariableResolver,
+        unpack: Callable[
+            [str, str | None, str | None, list[Mapping], str],
+            UnpackResult,
+        ] = unpack_dfir_orc,
+        load_parser: Callable[[str], tuple[str, bool]] | None = None,
+    ):
+        self.configuration = configuration
+        self.outcome = outcome
+        self.password = password
+        self.parsers = parsers
+        self.resolver = resolver
+        self.unpack = unpack
+        self.load_parser = load_parser
+
+    def plan(self) -> ArchivePlanResult:
+        if self.load_parser is None:
+            raise TypeError("load_parser must be provided")
+
+        errors: list[str] = []
+        grouper = RunConfigGrouper()
+        last_archive = ""
+        builder = BatchEntryBuilder(self.configuration, self.outcome, self.resolver)
+
+        for archive in self.outcome.archives:
+            last_archive = archive
+            archive_outputs = {
+                name: self.resolver.resolve_archive_output(output, archive)
+                for name, output in self.configuration.output.items()
+            }
+            unpacked = self.unpack(
+                archive,
+                self.password,
+                self.configuration.inner_archive_password,
+                self.configuration.mapping,
+                self.configuration.temp_folder,
+            )
+            errors.extend(unpacked.errors)
+            for file_mapping in unpacked.valid_mapping:
+                mapping = file_mapping.mapping
+                plugin_file = self.resolver.resolve_plugin_file(mapping, archive)
+                parser_name, is_batched = self.load_parser(plugin_file)
+                parser_definition = self.parsers.get(parser_name)
+                if not parser_definition:
+                    raise Exception(
+                        f"plugin '{(parser_name, is_batched)}' not found in the loaded plugins"
+                    )
+                selection = ParserSelection(
+                    plugin_file,
+                    parser_name,
+                    parser_definition.module,
+                    is_batched,
+                )
+                batch_entry = builder.build(
+                    archive,
+                    archive_outputs,
+                    file_mapping,
+                    selection,
+                )
+                grouper.add(
+                    batch_entry,
+                    plugin_file,
+                    mapping.mapping_label,
+                    parser_definition.module,
+                    parser_name,
+                    is_batched,
+                    mapping.timeout,
+                )
+
+        return ArchivePlanResult(grouper, errors, last_archive)

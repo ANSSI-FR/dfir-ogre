@@ -5,8 +5,15 @@ from unittest import TestCase
 from dfir_ogre_common import OutputConfiguration
 
 from ogre.configuration import Configuration, Mapping
-from ogre.dfir_orc_unpack import FileMapping, OrcOutcome
-from ogre.run_preparation import BatchEntryBuilder, ParserSelection, VariableResolver
+from ogre.dfir_orc_unpack import FileMapping, OrcOutcome, UnpackResult
+from ogre.run_preparation import (
+    ArchiveRunPlanner,
+    BatchEntryBuilder,
+    ParserSelection,
+    PluginDefinition,
+    RunConfigGrouper,
+    VariableResolver,
+)
 
 from .hardening_helpers import TempFolderTestCase
 
@@ -270,3 +277,128 @@ class TestBatchEntryBuilder(TempFolderTestCase):
             )
 
         self.assertEqual(context.exception.args[0], "missing_output")
+
+
+class TestRunConfigGrouper(TestCase):
+    def test_grouper_preserves_existing_plugin_file_grouping_contract(self):
+        config = _configuration()
+        outcome = _outcome()
+        resolver = VariableResolver(config, outcome)
+        archive_output = resolver.resolve_archive_output(
+            config.output["rawjson"],
+            "test/data/archive/SampleOrc.7z",
+        )
+        file_mapping = FileMapping(
+            file="/tmp/sample.txt",
+            archive_name="",
+            archive_file="sample.txt",
+            original_file=None,
+            original_creation_date=None,
+            original_modification_date=None,
+            mapping=config.mapping[0],
+            vss=None,
+            error=None,
+        )
+        builder = BatchEntryBuilder(config, outcome, resolver)
+        first = builder.build(
+            "test/data/archive/SampleOrc.7z",
+            {"rawjson": archive_output},
+            file_mapping,
+            ParserSelection(
+                "test/plugin_config/void.xml",
+                "Void",
+                "ogre.void_parser",
+                False,
+            ),
+        )
+        second = builder.build(
+            "test/data/archive/SampleOrc.7z",
+            {"rawjson": archive_output},
+            file_mapping,
+            ParserSelection(
+                "test/plugin_config/void.xml",
+                "Void",
+                "ogre.void_parser",
+                False,
+            ),
+        )
+
+        grouper = RunConfigGrouper()
+        grouper.add(
+            first,
+            "test/plugin_config/void.xml",
+            "text_output",
+            "ogre.void_parser",
+            "Void",
+            False,
+            3600,
+        )
+        grouper.add(
+            second,
+            "test/plugin_config/void.xml",
+            "text_output",
+            "ogre.void_parser",
+            "Void",
+            False,
+            3600,
+        )
+
+        self.assertEqual(len(grouper.map), 1)
+        run = grouper.map["test/plugin_config/void.xml"]
+        self.assertEqual(len(run.batch_entries), 2)
+        self.assertEqual(run.plugin_file, "test/plugin_config/void.xml")
+        self.assertEqual(run.mapping_label, "text_output")
+        self.assertEqual(run.module, "ogre.void_parser")
+        self.assertEqual(run.parser, "Void")
+        self.assertFalse(run.batch)
+        self.assertEqual(run.timeout, 3600)
+
+
+class TestArchiveRunPlanner(TempFolderTestCase):
+    def test_planner_collects_unpack_errors_and_groups_valid_mappings(self):
+        config = _configuration()
+        outcome = _outcome(archives=["test/data/archive/SampleOrc.7z"])
+        resolver = VariableResolver(config, outcome)
+        mapping = config.mapping[0]
+        file_mapping = FileMapping(
+            file=os.path.join(self.temp_folder, "sample.txt"),
+            archive_name="",
+            archive_file="sample.txt",
+            original_file=None,
+            original_creation_date=None,
+            original_modification_date=None,
+            mapping=mapping,
+            vss=None,
+            error=None,
+        )
+
+        def fake_unpack(archive, password, inner_archive_password, mappings, temp_folder):
+            self.assertEqual(archive, "test/data/archive/SampleOrc.7z")
+            self.assertIsNone(password)
+            self.assertIsNone(inner_archive_password)
+            self.assertEqual(list(mappings), config.mapping)
+            self.assertEqual(temp_folder, config.temp_folder)
+            return UnpackResult([file_mapping], ["extract warning"])
+
+        def fake_load_plugin_parser(plugin_file):
+            self.assertEqual(plugin_file, "test/plugin_config/void.xml")
+            return ("Void", False)
+
+        planner = ArchiveRunPlanner(
+            configuration=config,
+            outcome=outcome,
+            password=None,
+            parsers={"Void": PluginDefinition("Void", "ogre.void_parser", False)},
+            resolver=resolver,
+            unpack=fake_unpack,
+            load_parser=fake_load_plugin_parser,
+        )
+
+        result = planner.plan()
+
+        self.assertEqual(result.errors, ["extract warning"])
+        self.assertEqual(len(result.runs.map), 1)
+        run = result.runs.map["test/plugin_config/void.xml"]
+        self.assertEqual(run.parser, "Void")
+        self.assertEqual(run.module, "ogre.void_parser")
+        self.assertEqual(len(run.batch_entries), 1)
