@@ -5,6 +5,8 @@ import os
 import sys
 import yaml
 
+
+
 def init_logger(conf_file: str|None=None):
     """
     Initialise the root logger for the CLI.
@@ -14,6 +16,13 @@ def init_logger(conf_file: str|None=None):
     ``StreamHandler`` on stdout.  Without a config file a basic ``INFO``
     handler is configured instead.
     """
+
+    # Guard against re-initialization: if handlers are already configured,
+    # return early to prevent duplicate handler registration.
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        return
+
     # Suppress noisy output from evtx in all code paths
     logging.getLogger("evtx").setLevel(logging.ERROR)
 
