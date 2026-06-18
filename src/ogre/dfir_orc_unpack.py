@@ -1,20 +1,17 @@
 import csv
 
-from datetime import datetime, timezone
-import json
 import logging
 import os
 import re
-import uuid 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Collection, Dict, List, Optional, Tuple
 from .sevenzip_rename_factory import need_rename, rename_file,MAX_FILE_NAME_BYTE_LENGTH
-import dateutil.parser
 import py7zr
 from dfir_ogre_common import (extract_7z_file,extract_7z_files, FilesToExtract)
 
 from .configuration import Mapping
+from .orc_metadata import OrcOutcome, load_archive_metadata
 
 logger = logging.getLogger(__name__)
 # match windows short name ex: \SVA592~1.PF short names are duplicates in the GetThis.csv file
@@ -642,177 +639,3 @@ def _process_inner_archive_file_names(
                         valid_mapping.append(file_mapping)
 
     return to_extract
-
-
-@dataclass
-class OrcOutcome:
-    id: str
-    computer_name: str
-    date: datetime
-    dir_tree: Optional[str]
-    archives: List[str]
-
-
-def load_archive_metadata(archive_path: str) -> OrcOutcome:
-    """Load metadata and archive list from the given archive path.
-
-    If the path ends with `.json`, it is loaded directly using `_load_outcome_file`.
-
-    If the path contains multiple paths separated by commas, the function processes the first archive path to extract the machine name using a regex
-    pattern. If no match is found, the machine name is derived from the stem of the first archive path.
-
-    Args:
-        archive_path (str): A string representing a single archive path or multiple paths
-            separated by commas.
-
-    Returns:
-        OrcOutcome: An object containing:
-            - `id`: A UUID for the outcome.
-            - `computer_name`: Extracted from the archive filename via regex, or the stem
-              of the first archive path if no match is found.
-            - `start_date`: The current UTC timestamp in ISO format.
-            - `archives`: A list of processed archive paths.
-    """
-    archive_path = archive_path.strip()
-
-    if archive_path.startswith("{"):
-        return _load_json_definition(archive_path)
-
-    if archive_path.endswith(".json"):
-        return _load_outcome_file(archive_path)
-
-    archives = []
-
-    for arch in archive_path.split(","):
-        arch = arch.strip()
-        if arch:
-            archives.append(arch)
-
-    pattern = re.compile(
-        ".+_(WorkStation|Server|DomainController)_(?P<machine_name>.+)_.+.7z"
-    )
-    matched = pattern.match(archives[0])
-    if matched and "machine_name" in pattern.groupindex.keys():
-        computer_name = matched.group("machine_name")
-    else:
-        computer_name = Path(archives[0]).stem
-
-    start_date = datetime.now(timezone.utc)
-    id = str(uuid.uuid4())
-
-    return OrcOutcome(id, computer_name, start_date, None, archives)
-
-
-def _load_json_definition(archive_path: str) -> OrcOutcome:
-    json_data = json.loads(archive_path)
-    if isinstance(json_data, dict):
-        archives: List[str] = json_data.get("unencrypted_data_files", [])
-        if not archives:
-            raise Exception(
-                "No unencrypted archives defined in the json archive definition"
-            )
-
-        computer_name = str(json_data.get("hostname", None))
-        if not computer_name:
-            raise Exception(
-                "The hostname is not defined in the json archive definition"
-            )
-
-        id = str(json_data.get("id", ""))
-        if not id:
-            raise Exception("The orc id is not defined in the json archive definition")
-
-        timestamp: str = json_data.get(
-            "timestamp", ""
-        )  # datetime.strptime('Mon Feb 15 2010', '%a %b %d %Y').strftime('%d/%m/%Y')
-        if not timestamp:
-            raise Exception("No timestamp  defined in the json archive definition")
-
-        date = datetime.strptime(timestamp, "%Y%m%d_%H%M%S").replace(tzinfo=timezone.utc)
-
-
-        dir_tree = json_data.get("dir_tree", None)
-
-        return OrcOutcome(id, computer_name, date, dir_tree, archives)
-    else:
-        raise Exception("Invalid json archive definition")
-
-
-def _load_outcome_file(outcome_file) -> OrcOutcome:
-    """
-    Load metadata and archives from an Orc outcome file.
-
-    Process:
-    1. Parses JSON data from the file.
-    2. Extracts 'id', 'computer_name', 'start_date', and 'command_set' from the 'outcome' section.
-    3. Generates a UUID if 'id' is missing.
-    4. Derives computer_name from:
-        - Existing 'computer_name' field
-        - or Filename regex match
-        - or File stem if no match found
-    5. Uses current time if 'start_date' is missing.
-    6. Collects archive paths from command_set entries.
-
-    Args:
-        outcome_file (str): Path to the outcome.json file to process.
-
-    Returns:
-        OrcOutcome: Object containing metadata and archive paths.
-
-    Raises:
-        Exception: If the file is not a valid Orc outcome file (missing 'dfir-orc', 'outcome', or 'archive' nodes).
-    """
-    with open(outcome_file) as f:
-        json_data = json.load(f)
-        dfir_orc = json_data.get("dfir-orc", None)
-        if dfir_orc is None:
-            raise Exception(
-                f"{outcome_file} is not a valid Orc outcome file: 'dfir-orc' root node not found"
-            )
-
-        outcome = dfir_orc.get("outcome", None)
-        if outcome is None:
-            raise Exception(
-                f"{outcome_file} is not a valid Orc outcome file: 'outcome' node not found"
-            )
-
-        id = outcome.get("id", None)
-        if id:
-            id = id.lstrip(id[0]).rstrip(id[-1])
-        else:
-            id = str(uuid.uuid4())
-
-        computer_name = outcome.get("computer_name", None)
-        if computer_name is None:
-            pattern = re.compile(
-                ".+_(WorkStation|Server|DomainController)_(?P<machine_name>.+)_.+.json"
-            )
-            matched = pattern.match(outcome_file)
-            if matched and "machine_name" in pattern.groupindex.keys():
-                computer_name = matched.group("machine_name")
-            else:
-                computer_name = Path(outcome_file).stem
-
-        start_date = outcome.get("start", None)
-        if start_date is None:
-            timestamp = datetime.now(timezone.utc)
-        else:
-            timestamp = dateutil.parser.isoparse(start_date).replace(tzinfo=timezone.utc)
-
-
-        archives: List[str] = []
-        command_set: Dict = outcome.get("command_set", {})
-
-        path = Path(outcome_file).parent
-
-        for command in command_set:
-            archive = command.get("archive", None)
-            if archive is None:
-                raise Exception(
-                    f"{outcome_file} is not a valid Orc outcome file: command does not contains the 'archive' parameter "
-                )
-            archive_name = archive.get("name", None)
-            archive_path = str(path / archive_name)
-            if archive_name:
-                archives.append(archive_path)
-    return OrcOutcome(id, computer_name, timestamp, None, archives)
