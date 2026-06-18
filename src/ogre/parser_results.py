@@ -96,8 +96,8 @@ def finalize_run_result(run_result: RunResult, elapsed_s: float) -> RunResult:
     return run_result
 
 
-def metadata_to_dict(metadata: Metadata) -> dict:
-    meta_dict = {}
+def metadata_to_dict(metadata: Metadata) -> dict[str, str | None]:
+    meta_dict: dict[str, str | None] = {}
     meta_dict["computer"] = metadata.computer
 
     if metadata.orc_id:

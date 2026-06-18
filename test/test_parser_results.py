@@ -3,6 +3,8 @@ from unittest import TestCase
 from dfir_ogre_common import Metadata, RunReport
 
 from ogre.parser_results import (
+    FileStat,
+    OutputStat,
     RunResult,
     apply_report_to_result,
     create_run_result,
@@ -12,7 +14,7 @@ from ogre.parser_results import (
 
 
 class TestParserResults(TestCase):
-    def test_finalize_run_result_sets_zero_row_sec_when_elapsed_is_zero(self):
+    def test_finalize_run_result_sets_zero_row_sec_when_elapsed_is_zero_with_rows(self):
         result = RunResult(
             "mapping",
             0,
@@ -24,13 +26,29 @@ class TestParserResults(TestCase):
             "module.name",
             "2026-06-18T00:00:00+00:00",
             {},
-            [],
+            [
+                OutputStat(
+                    None,
+                    [
+                        FileStat(
+                            "output.csv",
+                            7,
+                            "csv",
+                            "csv",
+                            "iso",
+                            False,
+                            False,
+                            False,
+                        )
+                    ],
+                )
+            ],
         )
 
         finalized = finalize_run_result(result, 0)
 
         self.assertIs(finalized, result)
-        self.assertEqual(finalized.rows, 0)
+        self.assertEqual(finalized.rows, 7)
         self.assertEqual(finalized.time_s, 0)
         self.assertEqual(finalized.row_sec, 0)
 
