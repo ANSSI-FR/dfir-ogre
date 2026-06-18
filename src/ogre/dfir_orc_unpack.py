@@ -2,55 +2,29 @@ import csv
 
 import logging
 import os
-import re
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Collection, Dict, List, Optional, Tuple
+from typing import Collection, Dict, List, Optional
 from .sevenzip_rename_factory import need_rename, rename_file,MAX_FILE_NAME_BYTE_LENGTH
 import py7zr
 from dfir_ogre_common import (extract_7z_file,extract_7z_files, FilesToExtract)
 
 from .configuration import Mapping
+from .orc_mapping import (
+    FILE_NAME_MAPPING,
+    INNER_TEMP_ARCHIVE,
+    WINDOWS_SHORT_FILE_PATTERN,
+    FileMapping,
+    NestedArchive,
+    OriginalFileMappingResult,
+    OriginalNameMapping,
+    UnpackResult,
+    build_original_lookup,
+    compile_mapping_pattern,
+    partition_mappings,
+)
 from .orc_metadata import OrcOutcome, load_archive_metadata
 
 logger = logging.getLogger(__name__)
-# match windows short name ex: \SVA592~1.PF short names are duplicates in the GetThis.csv file
-WINDOWS_SHORT_FILE_PATTERN = re.compile(".*~[0-9]+\\.[a-zA-Z0-9_]+", re.IGNORECASE)
-EXTRACT_BATCH_SIZE = 10000
-FILE_NAME_MAPPING = "GetThis.csv"
-
-
-@dataclass
-class OriginalNameMapping:
-    """
-    Represents the mapping between an archive file and its original name.
-    """
-
-    archive: str
-    sample_name: str
-    original_name: str
-    creation_date: Optional[str]
-    modification_date: Optional[str]
-    vss: str
-
-
-@dataclass
-class FileMapping:
-    file: str
-    archive_name: str
-    archive_file: str
-    original_file: Optional[str]
-    original_creation_date: Optional[str]
-    original_modification_date: Optional[str]
-    mapping: Mapping
-    vss: Optional[str]
-    error: Optional[str]
-
-
-@dataclass
-class UnpackResult:
-    valid_mapping: List[FileMapping]
-    errors: List[str]
 
 
 def unpack_dfir_orc(
@@ -122,15 +96,7 @@ def unpack_dfir_orc(
     )
     errors = errors + original_files.errors
 
-    # Separate mapping rules into archive-based and original-file-based
-    archive_file_mapping: List[Mapping] = []
-    original_file_mapping: List[Mapping] = []
-
-    for m in mapping:
-        if m.archive_file_pattern:
-            archive_file_mapping.append(m)
-        elif m.original_file_pattern:
-            original_file_mapping.append(m)
+    archive_file_mapping, original_file_mapping = partition_mappings(mapping)
 
     valid_map = []
     valid_archive_mapping = []
@@ -180,16 +146,6 @@ def unpack_dfir_orc(
     valid_map = valid_archive_mapping + valid_original_mapping
     return UnpackResult(valid_map, errors)
 
-
-INNER_TEMP_ARCHIVE = ".inner"
-
-
-@dataclass
-class NestedArchive:
-    path: str
-    error: Optional[str]
-
-
 def _extract_nested_archives(
     archive: str, password: Optional[str], temp_folder: str
 ) -> List[NestedArchive]:
@@ -225,14 +181,6 @@ def _extract_nested_archives(
             inner_archive_path.append(NestedArchive(inner_file, error))
 
     return inner_archive_path
-
-
-
-@dataclass
-class OriginalFileMappingResult:
-    name_mapping: List[OriginalNameMapping]
-    errors: List[str]
-
 
 def _build_file_mapping(
     main_archive,
@@ -351,10 +299,9 @@ def _match_original_files(
                 ):
                     continue
 
-                try:
-                    pattern = re.compile(mapping.original_file_pattern, re.IGNORECASE)
-                except Exception as e:
-                    raise Exception(f"{e} in regex:{mapping.original_file_pattern}")
+                pattern = compile_mapping_pattern(
+                    mapping, "original_file_pattern"
+                )
 
                 if pattern.match(
                     original_file.original_name,
@@ -458,12 +405,9 @@ def _match_archive_files(
         for file in file_list:
             for mapping in archive_file_mapping:
                 if mapping.archive_file_pattern:
-                    try:
-                        pattern = re.compile(
-                            mapping.archive_file_pattern, re.IGNORECASE
-                        )
-                    except Exception as e:
-                        raise Exception(f"{e} in regex:{mapping.archive_file_pattern}")
+                    pattern = compile_mapping_pattern(
+                        mapping, "archive_file_pattern"
+                    )
 
                     if pattern.match(
                         file,
@@ -503,17 +447,7 @@ def _match_archive_files(
                     f"An error occured while extracting files from archive:'{archive}', error: {e} "
                 )
 
-    # build a mapping dict, giving priority to file_names that are not windows short files
-    file_dict: Dict[str, OriginalNameMapping] = {}
-    for original in original_files:
-        inserted = file_dict.get(original.sample_name, None)
-        if inserted:
-            if WINDOWS_SHORT_FILE_PATTERN.match(
-                inserted.original_name,
-            ):
-                file_dict[original.sample_name] = original
-        else:
-            file_dict[original.sample_name] = original
+    file_dict = build_original_lookup(original_files)
 
     # match pattern from sub archives
     for sub_archive in sub_archives:
@@ -591,12 +525,9 @@ def _process_inner_archive_file_names(
         for file in file_list:
             for mapping in archive_file_mapping:
                 if mapping.archive_file_pattern:
-                    try:
-                        pattern = re.compile(
-                            mapping.archive_file_pattern, re.IGNORECASE
-                        )
-                    except Exception as e:
-                        raise Exception(f"{e} in regex:{mapping.archive_file_pattern}")
+                    pattern = compile_mapping_pattern(
+                        mapping, "archive_file_pattern"
+                    )
 
                     if pattern.match(
                         file,
