@@ -23,11 +23,11 @@ def load_archive_metadata(archive_path: str) -> OrcOutcome:
     if not archive_path:
         raise Exception("No archive path provided")
 
-    if archive_path[0] in "{[":
-        return _load_json_definition(archive_path)
-
     if archive_path.endswith(".json"):
         return _load_outcome_file(archive_path)
+
+    if archive_path[0] in "{[":
+        return _load_json_definition(archive_path)
 
     archive_parts = archive_path.split(",")
     archive_parts = [arch.strip() for arch in archive_parts]
@@ -161,10 +161,11 @@ def _load_outcome_file(outcome_file) -> OrcOutcome:
                     f"{outcome_file} is not a valid Orc outcome file: command does not contains the 'archive' parameter "
                 )
             archive_name = archive.get("name", None)
-            if not isinstance(archive_name, str) or not archive_name:
+            if not isinstance(archive_name, str) or not archive_name.strip():
                 raise Exception(
                     f"{outcome_file} is not a valid Orc outcome file: archive name is empty"
                 )
+            archive_name = archive_name.strip()
             archive_path = str(path / archive_name)
             archives.append(archive_path)
     return OrcOutcome(id, computer_name, timestamp, None, archives)

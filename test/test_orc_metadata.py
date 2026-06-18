@@ -19,6 +19,33 @@ class TestOrcMetadata(TempFolderTestCase):
 
         self.assertIn("Invalid json archive definition", str(context.exception))
 
+    def test_bracket_prefixed_json_path_loads_as_outcome_file(self):
+        outcome_file = "[case].json"
+        try:
+            with open(outcome_file, "w") as file:
+                json.dump(
+                    {
+                        "dfir-orc": {
+                            "outcome": {
+                                "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+                                "computer_name": "HOST",
+                                "command_set": [
+                                    {"archive": {"name": "SampleOrc.7z"}},
+                                ],
+                            }
+                        }
+                    },
+                    file,
+                )
+
+            outcome = load_archive_metadata(outcome_file)
+
+            self.assertEqual(outcome.computer_name, "HOST")
+            self.assertEqual(outcome.archives, ["SampleOrc.7z"])
+        finally:
+            if os.path.exists(outcome_file):
+                os.remove(outcome_file)
+
     def test_json_archive_definition_requires_archive_list(self):
         archive_definition = """{
             "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
@@ -235,6 +262,27 @@ class TestOrcMetadata(TempFolderTestCase):
                             "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
                             "computer_name": "HOST",
                             "command_set": [{"archive": {}}],
+                        }
+                    }
+                },
+                file,
+            )
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn("archive name is empty", str(context.exception))
+
+    def test_outcome_file_requires_non_blank_archive_name(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump(
+                {
+                    "dfir-orc": {
+                        "outcome": {
+                            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+                            "computer_name": "HOST",
+                            "command_set": [{"archive": {"name": "   "}}],
                         }
                     }
                 },
