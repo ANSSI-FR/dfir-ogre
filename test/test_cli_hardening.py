@@ -4,8 +4,8 @@ import sys
 from types import SimpleNamespace
 from unittest import mock
 
-from ogre import archive_runner, cli, process_runner
-from ogre.cli import parse_params
+from ogre import archive_runner, cli, plugin_runner, process_runner
+from ogre.plugin_runner import parse_params
 from ogre.commands import OgreRunConfiguration, RunResult
 from ogre.reports import DataclassJSONEncoder, ReportBuilder
 
@@ -52,6 +52,31 @@ class TestCliHardening(TempFolderTestCase):
                 "text": "abc",
             },
         )
+
+    def test_run_plugin_logs_unknown_plugin(self):
+        plugin_file = os.path.join(self.temp_folder, "unknown_plugin.xml")
+        with open(plugin_file, "w") as file:
+            file.write('<plugin parser="NoSuchParser" />')
+
+        args = SimpleNamespace(
+            filename=os.path.join(self.temp_folder, "input.txt"),
+            plugin_config=plugin_file,
+            computer_name="host1",
+            output_folder=self.temp_folder,
+            output_format=None,
+            output_date_format=None,
+            params=None,
+            timeline=False,
+            include_empty=False,
+            library=None,
+        )
+
+        with mock.patch("ogre.plugin_runner.importlib.import_module") as import_module:
+            with self.assertLogs("ogre.plugin_runner", level="ERROR") as logs:
+                plugin_runner.run_plugin(args)
+
+        import_module.assert_called_once_with("dfir_ogre_plugin_windows")
+        self.assertIn("Unknown plugin 'NoSuchParser'", "\n".join(logs.output))
 
     def test_report_builder_aggregates_summary_and_errors(self):
         builder = ReportBuilder(
