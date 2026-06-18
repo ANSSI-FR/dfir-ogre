@@ -4,7 +4,7 @@ import sys
 from types import SimpleNamespace
 from unittest import mock
 
-from ogre import cli
+from ogre import cli, process_runner
 from ogre.cli import parse_params
 from ogre.commands import OgreRunConfiguration, RunResult
 from ogre.reports import DataclassJSONEncoder, ReportBuilder
@@ -127,10 +127,40 @@ class TestCliHardening(TempFolderTestCase):
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
         batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
 
-        with mock.patch("ogre.cli.multiprocessing.Process", FinishedProcess):
-            result = cli.run_parser_with_timeout(batch_entry, config, FakeManager())
+        with mock.patch("ogre.process_runner.multiprocessing.Process", FinishedProcess):
+            result = process_runner.run_parser_with_timeout(batch_entry, config, FakeManager())
 
         self.assertIs(result, expected)
+
+    def test_run_parser_with_timeout_raises_when_child_produces_no_result(self):
+        class FakeManager:
+            def list(self):
+                return []
+
+        class FinishedWithoutResult:
+            def __init__(self, target, args):
+                return None
+
+            def start(self):
+                return None
+
+            def join(self, timeout=None):
+                return None
+
+            def is_alive(self):
+                return False
+
+        config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
+        batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
+
+        with mock.patch("ogre.process_runner.multiprocessing.Process", FinishedWithoutResult):
+            with self.assertRaises(Exception) as context:
+                process_runner.run_parser_with_timeout(batch_entry, config, FakeManager())
+
+        self.assertEqual(
+            str(context.exception),
+            "The parsing process crashed and did not produce a report",
+        )
 
     def test_run_parser_with_timeout_terminates_hanging_process(self):
         instances = []
@@ -173,9 +203,9 @@ class TestCliHardening(TempFolderTestCase):
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
         batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
 
-        with mock.patch("ogre.cli.multiprocessing.Process", HangingProcess):
+        with mock.patch("ogre.process_runner.multiprocessing.Process", HangingProcess):
             with self.assertRaises(Exception) as context:
-                cli.run_parser_with_timeout(batch_entry, config, FakeManager())
+                process_runner.run_parser_with_timeout(batch_entry, config, FakeManager())
 
         self.assertIn("parsing timed out", str(context.exception))
         self.assertEqual(instances[0].join_calls, [config.timeout, 1, 1])
@@ -235,7 +265,7 @@ class TestCliHardening(TempFolderTestCase):
         with mock.patch("ogre.cli.prepare_runs", return_value=prepared):
             with mock.patch("ogre.cli.multiprocessing.Manager", return_value=object()):
                 with mock.patch(
-                    "ogre.cli.run_parser_with_timeout",
+                    "ogre.process_runner.run_parser_with_timeout",
                     return_value=make_run_result(rows=6, time_s=1.0),
                 ) as runner:
                     report = cli.parse_archive(
@@ -298,9 +328,9 @@ class TestCliHardening(TempFolderTestCase):
 
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", True, 5)
 
-        with mock.patch("ogre.cli.multiprocessing.Process", HangingProcess):
+        with mock.patch("ogre.process_runner.multiprocessing.Process", HangingProcess):
             with self.assertRaises(Exception) as context:
-                cli.run_batch_parser_with_timeout(config, FakeManager())
+                process_runner.run_batch_parser_with_timeout(config, FakeManager())
 
         self.assertIn("parsing timed out", str(context.exception))
         self.assertEqual(instances[0].join_calls, [config.timeout, 1, 1])

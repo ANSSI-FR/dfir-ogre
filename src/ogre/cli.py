@@ -14,7 +14,6 @@ import sys
 import logging
 
 import xml.etree.ElementTree as ET
-from multiprocessing.managers import ListProxy, SyncManager
 
 from dfir_ogre_common import (
     BatchEntry,
@@ -35,13 +34,10 @@ from .reports import ArchiveReport, DataclassJSONEncoder, ReportBuilder
 
 from .commands import (
     OgreRunConfiguration,
-    RunResult,
     list_parsers,
-    metadata_to_dict,
     prepare_runs,
-    run_batch_parser,
-    run_parser,
 )
+from . import process_runner
 from .void_parser import VoidParser as VoidParser
 from .logging import init_logger
 
@@ -316,7 +312,9 @@ def parse_archive(
         if run_configuration.batch:
             try:
                 logger.info(f"Running a batch of {len(run_configuration.batch_entries)} files with parser '{run_configuration.parser}', for mapping label '{run_configuration.mapping_label}' ")
-                result = run_batch_parser_with_timeout(run_configuration, manager)
+                result = process_runner.run_batch_parser_with_timeout(
+                    run_configuration, manager
+                )
                 report_builder.add_result(result, f"A batch of {len(run_configuration.batch_entries)} files")
 
             except Exception as e:
@@ -327,7 +325,9 @@ def parse_archive(
             for batch_entry in run_configuration.batch_entries:
                 try:
                     logger.info(f"Running '{run_configuration.parser}', on file '{batch_entry.file}' ")
-                    result = run_parser_with_timeout(batch_entry,run_configuration, manager)
+                    result = process_runner.run_parser_with_timeout(
+                        batch_entry, run_configuration, manager
+                    )
                     report_builder.add_result(result, batch_entry.file)
 
                 except Exception as e:
@@ -349,156 +349,6 @@ def parse_archive(
     shutil.rmtree(prepared_runs.tmp_folder, ignore_errors=True)
 
     return archive_report
-
-def run_parser_with_timeout(batch_entry: BatchEntry,config: OgreRunConfiguration, manager: SyncManager) -> RunResult:
-    """
-    Execute a parser in a separate process with a timeout.
-
-    The child process places its result into a ``multiprocessing`` manager list.
-    If the parser does not finish within ``config.timeout`` seconds, the
-    process is terminated (first gently, then forcefully) and an exception is
-    raised.
-
-    Parameters
-    ----------
-    batch_entry :
-        The file entry to be processed.
-    config :
-        Run‑time configuration describing the parser, timeout, output settings,
-        etc.
-    manager :
-        A :class:`multiprocessing.managers.SyncManager` providing a shared
-        list for inter‑process communication.
-    """
-    result = manager.list()
-    p = multiprocessing.Process(target=run_parser_command, args=(batch_entry,config, result))
-    p.start()
-    p.join(config.timeout)
-    if p.is_alive():
-        # try to gently stop the process
-        p.terminate()
-        p.join(1)
-        if p.is_alive():
-            # brutal
-            p.kill()
-            p.join(1)
-        if not p.is_alive():
-            p.close()
-        raise Exception(
-            f"parsing timed out, could not finish in {config.timeout} seconds"
-        )
-    if len(result) == 0:
-        raise Exception("The parsing process crashed and did not produce a report")
-
-    return result.pop()
-
-def run_batch_parser_with_timeout( config: OgreRunConfiguration, manager: SyncManager) -> RunResult:
-    """
-    Execute a *batched* parser in a separate process with a timeout.
-
-    This mirrors :func:`run_parser_with_timeout` but uses the batch‑oriented
-    command implementation.
-
-    Parameters
-    ----------
-    config :
-        Configuration for the batched parser run.
-    manager :
-        Manager providing a shared list for the child process to return its
-        :class:`RunResult`.
-    """
-    result = manager.list()
-    p = multiprocessing.Process(target=run_batch_parser_command, args=( config, result))
-    p.start()
-    p.join(config.timeout)
-    if p.is_alive():
-        # try to gently stop the process
-        p.terminate()
-        p.join(1)
-        if p.is_alive():
-            # brutal
-            p.kill()
-            p.join(1)
-        if not p.is_alive():
-            p.close()
-        raise Exception(
-            f"parsing timed out, could not finish in {config.timeout} seconds"
-        )
-    if len(result) == 0:
-        raise Exception("The parsing process crashed and did not produce a report")
-
-    return result.pop()
-
-def run_parser_command(batch_entry: BatchEntry,config: OgreRunConfiguration, result: ListProxy):
-    """
-    Wrapper that invokes :func:`ogre.commands.run_parser` and stores the result.
-
-    All exceptions are caught so that the parent process can continue
-    processing other files.
-
-    Parameters
-    ----------
-    batch_entry :
-        Information about the file to be parsed.
-    config :
-        The run configuration for this parser.
-    result :
-        A ``multiprocessing`` manager list that the child process appends its
-        :class:`RunResult` (or an error placeholder) to.
-    """
-    start_date = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    try:
-        result.append(run_parser(batch_entry, config))
-    except Exception as e:
-        error = f"A critical error occurred while parsing file '{config.batch_entries}' with parser: '{config.parser}' from module: '{config.module}' error: {e}"
-        logger.error(error)
-
-        result.append(
-            RunResult(
-                config.mapping_label,
-                1,
-                error,
-                0,
-                0,
-                0,
-                config.parser,
-                config.module,
-                start_date,
-                metadata_to_dict(batch_entry.metadata),
-                [],
-            )
-        )
-
-def run_batch_parser_command( config: OgreRunConfiguration, result: ListProxy):
-    """
-    Wrapper that invokes :func:`ogre.commands.run_parser` and stores the result.
-
-    All exceptions are caught so that the parent process can continue processing
-    other files.
-    """
-    start_date = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    try:
-        result.append(run_batch_parser(config))
-    except Exception as e:
-        error = f"A critical error occurred while parsing file '{config.batch_entries}' with parser: '{config.parser}' from module: '{config.module}' error: {e}"
-        logger.error(error)
-
-        result.append(
-            RunResult(
-                config.mapping_label,
-                1,
-                error,
-                0,
-                0,
-                0,
-                config.parser,
-                config.module,
-                start_date,
-                {},
-                [],
-            )
-        )
-
 
 def run_plugin(
     args,
