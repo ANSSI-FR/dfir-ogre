@@ -94,6 +94,21 @@ class TestOrcMetadata(TempFolderTestCase):
             str(context.exception),
         )
 
+    def test_json_archive_definition_requires_timestamp(self):
+        archive_definition = """{
+            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+            "hostname": "HOST",
+            "unencrypted_data_files": ["test/data/archive/SampleOrc.7z"]
+        }"""
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(archive_definition)
+
+        self.assertIn(
+            "No timestamp  defined in the json archive definition",
+            str(context.exception),
+        )
+
     def test_outcome_file_requires_command_set_list(self):
         outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
         with open(outcome_file, "w") as file:
@@ -114,6 +129,51 @@ class TestOrcMetadata(TempFolderTestCase):
             load_archive_metadata(outcome_file)
 
         self.assertIn("'command_set' node must be a list", str(context.exception))
+
+    def test_outcome_file_requires_command_entry_object(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump(
+                {
+                    "dfir-orc": {
+                        "outcome": {
+                            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+                            "computer_name": "HOST",
+                            "command_set": ["bad"],
+                        }
+                    }
+                },
+                file,
+            )
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn("command entry must be an object", str(context.exception))
+
+    def test_outcome_file_requires_archive_object(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump(
+                {
+                    "dfir-orc": {
+                        "outcome": {
+                            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+                            "computer_name": "HOST",
+                            "command_set": [{"archive": "bad"}],
+                        }
+                    }
+                },
+                file,
+            )
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn(
+            "command does not contains the 'archive' parameter",
+            str(context.exception),
+        )
 
     def test_outcome_file_requires_object_root(self):
         outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
