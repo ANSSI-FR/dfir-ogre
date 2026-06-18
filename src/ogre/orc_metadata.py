@@ -29,9 +29,16 @@ def load_archive_metadata(archive_path: str) -> OrcOutcome:
     if archive_path.endswith(".json"):
         return _load_outcome_file(archive_path)
 
-    archives = [arch.strip() for arch in archive_path.split(",") if arch.strip()]
-    if not archives:
+    archive_parts = archive_path.split(",")
+    archive_parts = [arch.strip() for arch in archive_parts]
+    if not any(archive_parts):
         raise Exception("No archive path provided")
+    if any(
+        not arch and any(archive_parts[:index]) and any(archive_parts[index + 1 :])
+        for index, arch in enumerate(archive_parts)
+    ):
+        raise Exception("Empty archive path in archive list")
+    archives = [arch for arch in archive_parts if arch]
 
     pattern = re.compile(
         ".+_(WorkStation|Server|DomainController)_(?P<machine_name>.+)_.+.7z"
@@ -61,9 +68,10 @@ def _load_json_definition(archive_path: str) -> OrcOutcome:
     if not computer_name:
         raise Exception("The hostname is not defined in the json archive definition")
 
-    id = str(json_data.get("id", ""))
+    id = json_data.get("id", "")
     if not id:
         raise Exception("The orc id is not defined in the json archive definition")
+    id = str(id)
 
     timestamp: str = json_data.get("timestamp", "")
     if not timestamp:
@@ -114,7 +122,7 @@ def _load_outcome_file(outcome_file) -> OrcOutcome:
             timestamp = dateutil.parser.isoparse(start_date).replace(tzinfo=timezone.utc)
 
         archives: List[str] = []
-        command_set = outcome.get("command_set", [])
+        command_set = outcome.get("command_set", None)
         if not isinstance(command_set, list):
             raise Exception(
                 f"{outcome_file} is not a valid Orc outcome file: 'command_set' node must be a list"
