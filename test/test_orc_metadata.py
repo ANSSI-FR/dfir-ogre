@@ -19,6 +19,38 @@ class TestOrcMetadata(TempFolderTestCase):
 
         self.assertIn("Invalid json archive definition", str(context.exception))
 
+    def test_json_archive_definition_requires_archive_list(self):
+        archive_definition = """{
+            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+            "hostname": "HOST",
+            "timestamp": "20250904_221144",
+            "unencrypted_data_files": "abc"
+        }"""
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(archive_definition)
+
+        self.assertIn(
+            "No unencrypted archives defined in the json archive definition",
+            str(context.exception),
+        )
+
+    def test_json_archive_definition_rejects_empty_archive_entries(self):
+        archive_definition = """{
+            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+            "hostname": "HOST",
+            "timestamp": "20250904_221144",
+            "unencrypted_data_files": [""]
+        }"""
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(archive_definition)
+
+        self.assertIn(
+            "No unencrypted archives defined in the json archive definition",
+            str(context.exception),
+        )
+
     def test_comma_separated_archives_rejects_empty_values(self):
         with self.assertRaises(Exception) as context:
             load_archive_metadata(" , ")
@@ -83,6 +115,36 @@ class TestOrcMetadata(TempFolderTestCase):
 
         self.assertIn("'command_set' node must be a list", str(context.exception))
 
+    def test_outcome_file_requires_object_root(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump([], file)
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn("root node must be an object", str(context.exception))
+
+    def test_outcome_file_requires_dfir_orc_object(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump({"dfir-orc": []}, file)
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn("'dfir-orc' node must be an object", str(context.exception))
+
+    def test_outcome_file_requires_outcome_object(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump({"dfir-orc": {"outcome": []}}, file)
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn("'outcome' node must be an object", str(context.exception))
+
     def test_outcome_file_requires_command_set(self):
         outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
         with open(outcome_file, "w") as file:
@@ -113,6 +175,27 @@ class TestOrcMetadata(TempFolderTestCase):
                             "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
                             "computer_name": "HOST",
                             "command_set": [{"archive": {}}],
+                        }
+                    }
+                },
+                file,
+            )
+
+        with self.assertRaises(Exception) as context:
+            load_archive_metadata(outcome_file)
+
+        self.assertIn("archive name is empty", str(context.exception))
+
+    def test_outcome_file_requires_archive_name_string(self):
+        outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
+        with open(outcome_file, "w") as file:
+            json.dump(
+                {
+                    "dfir-orc": {
+                        "outcome": {
+                            "id": "{9219B312-D3E5-4CD7-A87E-B21350B01B4B}",
+                            "computer_name": "HOST",
+                            "command_set": [{"archive": {"name": []}}],
                         }
                     }
                 },

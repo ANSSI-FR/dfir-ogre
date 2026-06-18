@@ -60,8 +60,15 @@ def _load_json_definition(archive_path: str) -> OrcOutcome:
     if not isinstance(json_data, dict):
         raise Exception("Invalid json archive definition")
 
-    archives: List[str] = json_data.get("unencrypted_data_files", [])
-    if not archives:
+    archives = json_data.get("unencrypted_data_files", [])
+    if (
+        not isinstance(archives, list)
+        or not archives
+        or any(
+            not isinstance(archive, str) or not archive.strip()
+            for archive in archives
+        )
+    ):
         raise Exception("No unencrypted archives defined in the json archive definition")
 
     computer_name = json_data.get("hostname")
@@ -86,10 +93,19 @@ def _load_json_definition(archive_path: str) -> OrcOutcome:
 def _load_outcome_file(outcome_file) -> OrcOutcome:
     with open(outcome_file) as f:
         json_data = json.load(f)
+        if not isinstance(json_data, dict):
+            raise Exception(
+                f"{outcome_file} is not a valid Orc outcome file: root node must be an object"
+            )
+
         dfir_orc = json_data.get("dfir-orc", None)
         if dfir_orc is None:
             raise Exception(
                 f"{outcome_file} is not a valid Orc outcome file: 'dfir-orc' root node not found"
+            )
+        if not isinstance(dfir_orc, dict):
+            raise Exception(
+                f"{outcome_file} is not a valid Orc outcome file: 'dfir-orc' node must be an object"
             )
 
         outcome = dfir_orc.get("outcome", None)
@@ -97,10 +113,14 @@ def _load_outcome_file(outcome_file) -> OrcOutcome:
             raise Exception(
                 f"{outcome_file} is not a valid Orc outcome file: 'outcome' node not found"
             )
+        if not isinstance(outcome, dict):
+            raise Exception(
+                f"{outcome_file} is not a valid Orc outcome file: 'outcome' node must be an object"
+            )
 
         id = outcome.get("id", None)
         if id:
-            id = id.lstrip(id[0]).rstrip(id[-1])
+            id = str(id).removeprefix("{").removesuffix("}")
         else:
             id = str(uuid.uuid4())
 
@@ -141,7 +161,7 @@ def _load_outcome_file(outcome_file) -> OrcOutcome:
                     f"{outcome_file} is not a valid Orc outcome file: command does not contains the 'archive' parameter "
                 )
             archive_name = archive.get("name", None)
-            if not archive_name:
+            if not isinstance(archive_name, str) or not archive_name:
                 raise Exception(
                     f"{outcome_file} is not a valid Orc outcome file: archive name is empty"
                 )
