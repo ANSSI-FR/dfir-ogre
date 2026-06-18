@@ -14,7 +14,6 @@ import sys
 import logging
 
 import xml.etree.ElementTree as ET
-from dataclasses import asdict, dataclass, is_dataclass
 from multiprocessing.managers import ListProxy, SyncManager
 
 from dfir_ogre_common import (
@@ -27,12 +26,12 @@ from dfir_ogre_common import (
 )
 from pathlib import Path
 from tabulate import tabulate
-from typing_extensions import override
 import yaml
 
 logger = logging.getLogger(__name__)
 
 from .timeline import build_timeline
+from .reports import ArchiveReport, DataclassJSONEncoder, ReportBuilder
 
 from .commands import (
     OgreRunConfiguration,
@@ -274,7 +273,7 @@ def parse_archive(
     global_vars: dict[str, str],
     password: str| None,
     command_line: str,
-) -> 'ArchiveReport':
+) -> ArchiveReport:
     """
        Unpack an ORC archive and run the configured parsers.
 
@@ -655,117 +654,3 @@ def parse_params(params)-> dict[str,str|None]:
             param_dict[key] = str(value)
 
     return param_dict
-
-@dataclass
-class ParserResult:
-    """Aggregated statistics for a single parser across many files."""
-
-    parser: str
-    runs: int
-    rows: int
-    time: float
-    errors: list[str]
-
-
-@dataclass
-class ArchiveReport:
-    """JSON‑serialisable report for an ORC processing run."""
-
-    timestamp: str
-    command_line: str
-    computer: str
-    orc_id: str
-    output_folder: str
-    extract_errors: list[str]
-    parsing_errors: list[str]
-    summary: list[ParserResult]
-    run_results: list[RunResult]
-
-
-class ReportBuilder:
-    timestamp: str
-    command_line: str
-    computer: str
-    orc_id: str
-    output_folder: str
-    extract_errors: list[str]
-    parsing_errors: list[str]
-    run_results: list[RunResult]
-    summary_builder: dict[str, ParserResult]
-    """
-    Helper class that incrementally builds an :class:`ArchiveReport`.
-
-    It collects extraction errors, parsing errors, per‑parser statistics, and
-    individual`RunResult` objects.  When all processing is complete,
-    the `get_report` method returns a fully populated dataclass ready for JSON
-    serialisation.
-    """
-
-    def __init__(
-        self,
-        timestamp: str,
-        command_line: str,
-        computer: str,
-        orc_id: str,
-        output_folder: str,
-    ):
-        self.timestamp = timestamp
-        self.command_line = command_line
-        self.computer = computer
-        self.orc_id = orc_id
-        self.output_folder = output_folder
-        self.extract_errors = []
-        self.parsing_errors = []
-        self.run_results = []
-        self.summary_builder = {}
-
-    def add_extract_error(self, error: str):
-        self.extract_errors.append(error)
-
-    def add_parsing_error(self, error: str):
-        self.parsing_errors.append(error)
-
-    def add_result(self, result: RunResult, file):
-        self.run_results.append(result)
-
-        parser_result = self.summary_builder.get(result.mapping_label, None)
-        if not parser_result:
-            parser_result = ParserResult(result.mapping_label, 0, 0, 0.0, [])
-        parser_result.runs += 1
-        parser_result.rows += result.rows
-        parser_result.time += result.time_s
-
-        if result.last_error:
-            error = f"{result.num_errors} error(s) occurred while parsing data: '{result.mapping_label}', file: '{file}', parser: '{result.parser}', last error: {result.last_error}"
-            logger.error(error)
-            parser_result.errors.append(error)
-            self.parsing_errors.append(error)
-
-        self.summary_builder[result.mapping_label] = parser_result
-
-    def get_report(self) -> ArchiveReport:
-        summary = []
-        for val in self.summary_builder.values():
-            summary.append(val)
-        summary.sort(key=lambda x: x.parser)
-
-        return ArchiveReport(
-            self.timestamp,
-            self.command_line,
-            self.computer,
-            self.orc_id,
-            self.output_folder,
-            self.extract_errors,
-            self.parsing_errors,
-            summary,
-            self.run_results,
-        )
-
-
-class DataclassJSONEncoder(json.JSONEncoder):
-    """JSON encoder capable of serialising dataclass instances."""
-    @override
-    def default(self, o):
-        if is_dataclass(o):
-            return asdict(o)  # ignore  # pyright: ignore[reportArgumentType]
-        return super().default(o)

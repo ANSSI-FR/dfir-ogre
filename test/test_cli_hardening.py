@@ -5,8 +5,9 @@ from types import SimpleNamespace
 from unittest import mock
 
 from ogre import cli
-from ogre.cli import DataclassJSONEncoder, ReportBuilder, parse_params
+from ogre.cli import parse_params
 from ogre.commands import OgreRunConfiguration, RunResult
+from ogre.reports import DataclassJSONEncoder, ReportBuilder
 
 from .hardening_helpers import TempFolderTestCase
 
@@ -62,7 +63,7 @@ class TestCliHardening(TempFolderTestCase):
         )
         builder.add_extract_error("extract failed")
         builder.add_result(make_run_result(rows=2, time_s=1.25), "one.txt")
-        with self.assertLogs("ogre.cli", level="ERROR") as logs:
+        with self.assertLogs("ogre.reports", level="ERROR") as logs:
             builder.add_result(
                 make_run_result(
                     rows=3,
