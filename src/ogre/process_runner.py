@@ -6,13 +6,15 @@ from typing import Callable
 
 from dfir_ogre_common import BatchEntry
 
-from .commands import (
-    OgreRunConfiguration,
-    RunResult,
-    metadata_to_dict,
+from .parser_execution import (
     run_batch_parser,
     run_parser,
 )
+from .parser_results import (
+    RunResult,
+    metadata_to_dict,
+)
+from .run_preparation import OgreRunConfiguration
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass, is_dataclass
 
 from typing_extensions import override
 
-from .commands import RunResult
+from .parser_results import RunResult
 
 logger = logging.getLogger(__name__)
 
