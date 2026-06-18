@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import importlib
 import time
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from dfir_ogre_common import BatchEntry, OgreBatchedPlugin, OgrePlugin
 
@@ -11,7 +14,9 @@ from .parser_results import (
     finalize_run_result,
     metadata_to_dict,
 )
-from .run_preparation import OgreRunConfiguration
+
+if TYPE_CHECKING:
+    from .run_preparation import OgreRunConfiguration
 
 
 def _start_date() -> str:
