@@ -4,7 +4,7 @@ import sys
 from types import SimpleNamespace
 from unittest import mock
 
-from ogre import cli, process_runner
+from ogre import archive_runner, cli, process_runner
 from ogre.cli import parse_params
 from ogre.commands import OgreRunConfiguration, RunResult
 from ogre.reports import DataclassJSONEncoder, ReportBuilder
@@ -262,13 +262,13 @@ class TestCliHardening(TempFolderTestCase):
             tmp_folder=tmp_folder,
         )
 
-        with mock.patch("ogre.cli.prepare_runs", return_value=prepared):
-            with mock.patch("ogre.cli.multiprocessing.Manager", return_value=object()):
+        with mock.patch("ogre.archive_runner.prepare_runs", return_value=prepared):
+            with mock.patch("ogre.archive_runner.multiprocessing.Manager", return_value=object()):
                 with mock.patch(
-                    "ogre.process_runner.run_parser_with_timeout",
+                    "ogre.archive_runner.run_parser_with_timeout",
                     return_value=make_run_result(rows=6, time_s=1.0),
                 ) as runner:
-                    report = cli.parse_archive(
+                    report = archive_runner.parse_archive(
                         "config.yaml",
                         "archive.7z",
                         {"case": "case1"},

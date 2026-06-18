@@ -1,13 +1,9 @@
 """
 Command line interface for DFIR‑OGRE.
 """
-from ogre.logging import init_logger
-
 import argparse
-import datetime
 import importlib
 import json
-import multiprocessing
 import os
 import shutil
 import sys
@@ -29,15 +25,13 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+from .archive_runner import handle_orc_archive as _handle_orc_archive
+from .archive_runner import parse_archive as _parse_archive
 from .timeline import build_timeline
-from .reports import ArchiveReport, DataclassJSONEncoder, ReportBuilder
 
 from .commands import (
-    OgreRunConfiguration,
     list_parsers,
-    prepare_runs,
 )
-from . import process_runner
 from .void_parser import VoidParser as VoidParser
 from .logging import init_logger
 
@@ -75,7 +69,7 @@ def main() -> None:
     orc = sub_parser.add_parser(
         "orc", help="Run a list of parser against files provided in an Orc archive"
     )
-    orc.set_defaults(func=handle_orc_archive)
+    orc.set_defaults(func=_handle_orc_archive)
     _ =  orc.add_argument(
        "--configuration", required=True, help="the ogre yaml configuration file"
     )
@@ -179,37 +173,6 @@ def display_plugin_list(args):
         )
     )
 
-def handle_orc_archive(args):
-    """
-    Process an ORC archive according to a configuration file.
-
-    This function is the implementation behind the ``ogre orc`` sub‑command.
-    It forwards the arguments to :func:`parse_archive`, which performs the
-    extraction, runs the parsers, and writes a JSON report.
-
-    Parameters
-    ----------
-    args : argparse.Namespace
-        Expected attributes:
-        ``configuration`` (path to YAML),
-        ``archive`` (archive identifier),
-        ``case`` (optional case name),
-        ``password`` (optional password for encrypted archives).
-    """
-    init_logger(args.configuration)
-    if args.case:
-        global_vars = {"case": str(args.case)}
-    else:
-        global_vars = {}
-
-    _ = parse_archive(
-        args.configuration,
-        args.archive,
-        global_vars,
-        args.password,
-        " ".join(sys.argv),
-    )
-
 def handle_timeline(args):
     """
     Generate a timeline CSV from an ORC archive.
@@ -245,7 +208,7 @@ def handle_timeline(args):
     if args.case:
         global_vars["case"] = str(args.case)
 
-    report = parse_archive(
+    report = _parse_archive(
         args.configuration,
         args.archive,
         global_vars,
@@ -262,93 +225,6 @@ def handle_timeline(args):
 
     shutil.rmtree(tmp_folder, ignore_errors=True)
     shutil.rmtree(data_folder, ignore_errors=True)
-
-def parse_archive(
-    configuration: str,
-    archive: str,
-    global_vars: dict[str, str],
-    password: str| None,
-    command_line: str,
-) -> ArchiveReport:
-    """
-       Unpack an ORC archive and run the configured parsers.
-
-       This is the core routine used by both the ``orc`` and ``timeline``
-       sub‑commands.  It prepares the runs, executes them, collects results, and writes a JSON report.
-
-       Parameters
-       ----------
-       configuration :
-           Path to the YAML configuration file describing parsers and output
-           locations.
-       archive :
-           Either a JSON string, a comma‑separated list of archive file paths,
-           or a path to an ``outcome.json`` file produced by a previous run.
-       case :
-           Optional case identifier used for variable interpolation in the config.
-       password :
-           Optional password for encrypted archives.
-       command_line :
-           Full command line that invoked the CLI – stored in the report for
-           reproducibility.
-    """
-    logger.info(f"Unpacking archive '{archive}'")
-
-    start_date = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    prepared_runs = prepare_runs(configuration, archive, password, global_vars)
-    report_builder = ReportBuilder(
-        start_date,
-        command_line,
-        prepared_runs.computer,
-        prepared_runs.orc_id,
-        prepared_runs.output_folder,
-    )
-    for errors in prepared_runs.errors:
-        logger.error(f"{errors}")
-        report_builder.add_extract_error(errors)
-
-    manager = multiprocessing.Manager()
-    for run_configuration in prepared_runs.runs.map.values():
-        if run_configuration.batch:
-            try:
-                logger.info(f"Running a batch of {len(run_configuration.batch_entries)} files with parser '{run_configuration.parser}', for mapping label '{run_configuration.mapping_label}' ")
-                result = process_runner.run_batch_parser_with_timeout(
-                    run_configuration, manager
-                )
-                report_builder.add_result(result, f"A batch of {len(run_configuration.batch_entries)} files")
-
-            except Exception as e:
-                error = f"An error occurred while parsing a batch of {len(run_configuration.batch_entries)} with parser: '{run_configuration.parser}'  for mapping label '{run_configuration.mapping_label}' error: {e}"
-                logger.error(error)
-                report_builder.add_parsing_error(error)
-        else:
-            for batch_entry in run_configuration.batch_entries:
-                try:
-                    logger.info(f"Running '{run_configuration.parser}', on file '{batch_entry.file}' ")
-                    result = process_runner.run_parser_with_timeout(
-                        batch_entry, run_configuration, manager
-                    )
-                    report_builder.add_result(result, batch_entry.file)
-
-                except Exception as e:
-                    error = f"An error occurred while parsing file '{batch_entry.file}' with parser: '{run_configuration.parser}' from module: '{run_configuration.module}' error: {e}"
-                    logger.error(error)
-                    report_builder.add_parsing_error(error)
-
-    archive_report = report_builder.get_report()
-    json_str = json.dumps(archive_report, cls=DataclassJSONEncoder)
-    report_name = f"report_{prepared_runs.computer}_{prepared_runs.orc_id}.json"
-
-    os.makedirs(prepared_runs.report_folder, exist_ok=True)
-    report_file = os.path.join(prepared_runs.report_folder, report_name)
-    logger.info(f"Writing report: {report_file}")
-    with open(report_file, "w") as f:
-        _ = f.write(json_str)
-
-    logger.info(f"Deleting temporary data: {prepared_runs.tmp_folder}")
-    shutil.rmtree(prepared_runs.tmp_folder, ignore_errors=True)
-
-    return archive_report
 
 def run_plugin(
     args,
