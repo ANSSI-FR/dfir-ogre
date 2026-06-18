@@ -1,28 +1,26 @@
 """
-Command line interface for DFIR‑OGRE.
+Command line interface for DFIR-OGRE.
 """
+
 import argparse
+import logging
 import os
 import shutil
 import sys
-import logging
-
 from pathlib import Path
-from tabulate import tabulate
-import yaml
 
-logger = logging.getLogger(__name__)
+import yaml
+from tabulate import tabulate
 
 from .archive_runner import handle_orc_archive as _handle_orc_archive
 from .archive_runner import parse_archive as _parse_archive
+from .commands import list_parsers
+from .logging import init_logger
 from .plugin_runner import run_plugin as _run_plugin
 from .timeline import build_timeline
-
-from .commands import (
-    list_parsers,
-)
 from .void_parser import VoidParser as VoidParser
-from .logging import init_logger
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:

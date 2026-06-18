@@ -261,6 +261,36 @@ class TestCliHardening(TempFolderTestCase):
         self.assertEqual(args.configuration, configuration)
         self.assertEqual(args.case, "case1")
 
+    def test_main_dispatches_plugin_subcommand(self):
+        plugin_file = os.path.join(self.temp_folder, "plugin.xml")
+        input_file = os.path.join(self.temp_folder, "input.txt")
+
+        with mock.patch("ogre.cli._run_plugin") as handler:
+            with mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "dfir-ogre",
+                    "plugin",
+                    "--filename",
+                    input_file,
+                    "--plugin_config",
+                    plugin_file,
+                    "--computer_name",
+                    "host1",
+                    "--output_folder",
+                    self.temp_folder,
+                ],
+            ):
+                cli.main()
+
+        handler.assert_called_once()
+        args = handler.call_args.args[0]
+        self.assertEqual(args.filename, input_file)
+        self.assertEqual(args.plugin_config, plugin_file)
+        self.assertEqual(args.computer_name, "host1")
+        self.assertEqual(args.output_folder, self.temp_folder)
+
     def test_parse_archive_writes_report_and_cleans_tmp_folder(self):
         report_folder = os.path.join(self.temp_folder, "report")
         output_folder = os.path.join(self.temp_folder, "output")
