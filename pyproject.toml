@@ -1,6 +1,6 @@
 [project]
 name = "dfir-ogre"
-version = "2.0.0-beta1"
+version = "2.0.0-beta2"
 description = "A command‑line utility that extracts windows forensic artefact from DFIR-ORC archives"
 readme = "README.md"
 requires-python = ">=3.10"

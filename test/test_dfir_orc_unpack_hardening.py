@@ -1,11 +1,23 @@
 import os
 
+import py7zr
+
+from ogre.configuration import Mapping
 from ogre.dfir_orc_unpack import load_archive_metadata, unpack_dfir_orc
 
 from .hardening_helpers import TempFolderTestCase
 
 
 class TestDfirOrcUnpackHardening(TempFolderTestCase):
+    def _escaped_path(self, filename):
+        path = os.path.abspath(os.path.join(self.temp_folder, "..", filename))
+        self.addCleanup(lambda: os.path.exists(path) and os.remove(path))
+        return path
+
+    def _write_archive_entry(self, archive, entry_name, data):
+        with py7zr.SevenZipFile(archive, "w") as archive7z:
+            archive7z._writestr(data, entry_name)
+
     def test_unpack_missing_archive_returns_error_list(self):
         result = unpack_dfir_orc(
             os.path.join(self.temp_folder, "missing.7z"),
@@ -24,6 +36,54 @@ class TestDfirOrcUnpackHardening(TempFolderTestCase):
 
         self.assertEqual(result.valid_mapping, [])
         self.assertEqual(result.errors, ["'README.md' is not a 7z file"])
+
+    def test_unpack_rejects_traversal_nested_archive_entry(self):
+        archive = os.path.join(self.temp_folder, "main.7z")
+        escaped = self._escaped_path("escaped.7z")
+        self._write_archive_entry(archive, "../../../escaped.7z", b"owned")
+
+        result = unpack_dfir_orc(archive, None, None, [], self.temp_folder)
+
+        self.assertFalse(os.path.exists(escaped))
+        self.assertEqual(result.valid_mapping, [])
+        self.assertTrue(
+            any("Unsafe archive member path" in error for error in result.errors),
+            result.errors,
+        )
+
+    def test_unpack_rejects_traversal_inner_archive_entry(self):
+        inner_archive = os.path.join(self.temp_folder, "inner.7z")
+        main_archive = os.path.join(self.temp_folder, "main.7z")
+        escaped = self._escaped_path("inner-escaped.txt")
+        self._write_archive_entry(
+            inner_archive,
+            "../../../inner-escaped.txt",
+            b"inner-owned",
+        )
+        with py7zr.SevenZipFile(main_archive, "w") as archive7z:
+            archive7z.write(inner_archive, "inner.7z")
+        mapping = [
+            Mapping(
+                ".*\\.txt$",
+                None,
+                "unused.xml",
+                "text",
+                True,
+                False,
+                10,
+                {},
+                [],
+            )
+        ]
+
+        result = unpack_dfir_orc(main_archive, None, None, mapping, self.temp_folder)
+
+        self.assertFalse(os.path.exists(escaped))
+        self.assertEqual(result.valid_mapping, [])
+        self.assertTrue(
+            any("Unsafe archive member path" in error for error in result.errors),
+            result.errors,
+        )
 
     def test_json_archive_definition_requires_unencrypted_archives(self):
         archive_definition = """{

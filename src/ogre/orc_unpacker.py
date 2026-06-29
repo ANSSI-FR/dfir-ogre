@@ -1,7 +1,7 @@
 import csv
 import logging
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Collection, Dict, List, Optional
 
 import py7zr
@@ -28,6 +28,49 @@ from .sevenzip_rename_factory import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class UnsafeArchivePathError(ValueError):
+    pass
+
+
+def _archive_member_parts(member_path: str) -> tuple[str, ...]:
+    normalized = member_path.replace("\\", "/")
+    posix_path = PurePosixPath(normalized)
+    windows_path = PureWindowsPath(member_path)
+    if (
+        not member_path
+        or "\x00" in member_path
+        or posix_path.is_absolute()
+        or windows_path.is_absolute()
+        or windows_path.drive
+    ):
+        raise UnsafeArchivePathError(
+            f"Unsafe archive member path '{member_path}'"
+        )
+
+    parts = posix_path.parts
+    if not parts or any(part == ".." for part in parts):
+        raise UnsafeArchivePathError(
+            f"Unsafe archive member path '{member_path}'"
+        )
+    return parts
+
+
+def _safe_archive_member_path(member_path: str, extraction_root: str) -> str:
+    parts = _archive_member_parts(member_path)
+    output_path = os.path.normpath(os.path.join(extraction_root, *parts))
+    root_abs = os.path.realpath(extraction_root)
+    output_abs = os.path.realpath(output_path)
+    try:
+        inside_root = os.path.commonpath([root_abs, output_abs]) == root_abs
+    except ValueError:
+        inside_root = False
+    if not inside_root:
+        raise UnsafeArchivePathError(
+            f"Unsafe archive member path '{member_path}'"
+        )
+    return output_path
 
 
 def unpack_dfir_orc(
@@ -175,7 +218,11 @@ def _extract_nested_archives(
 
     # extract inner archive one by one to avoid errors
     for file in files_to_extract:
-        inner_file = os.path.join(inner_archive_folder, file)
+        try:
+            inner_file = _safe_archive_member_path(file, inner_archive_folder)
+        except UnsafeArchivePathError as e:
+            inner_archive_path.append(NestedArchive("", str(e)))
+            continue
         try:
             extract_7z_file(archive, file, inner_archive_folder, password)
             inner_archive_path.append(NestedArchive(inner_file, None))
@@ -314,11 +361,26 @@ def _match_original_files(
                         archive_extract_folder,
                         Path(original_file.archive).stem,
                     )
-
-                    extracted_file = os.path.join(
-                        extraction_path,
-                        original_file.sample_name,
-                    )
+                    try:
+                        extracted_file = _safe_archive_member_path(
+                            original_file.sample_name,
+                            extraction_path,
+                        )
+                    except UnsafeArchivePathError as e:
+                        file_mappings.append(
+                            FileMapping(
+                                "",
+                                original_file.archive,
+                                original_file.sample_name,
+                                original_file.original_name,
+                                original_file.creation_date,
+                                original_file.modification_date,
+                                mapping,
+                                original_file.vss,
+                                str(e),
+                            )
+                        )
+                        continue
 
                     mapping = FileMapping(
                         extracted_file,
@@ -338,9 +400,9 @@ def _match_original_files(
                         # if file_name is too long, change its output name to its hex hash
                         renamed_path = rename_file(original_file.sample_name)
                         to_extract.add(original_file.sample_name, renamed_path)
-                        mapping.file =  os.path.join(
-                            extraction_path,
+                        mapping.file = _safe_archive_member_path(
                             renamed_path,
+                            extraction_path,
                         )
                     else:
                         to_extract.add(original_file.sample_name,original_file.sample_name)
@@ -415,11 +477,26 @@ def _match_archive_files(
                     if pattern.match(
                         file,
                     ):
-
-                        extracted_file = os.path.join(
-                            archive_extract_folder,
-                            file,
-                        )
+                        try:
+                            extracted_file = _safe_archive_member_path(
+                                file,
+                                archive_extract_folder,
+                            )
+                        except UnsafeArchivePathError as e:
+                            valid_mapping.append(
+                                FileMapping(
+                                    "",
+                                    "",
+                                    file,
+                                    None,
+                                    None,
+                                    None,
+                                    mapping,
+                                    None,
+                                    str(e),
+                                )
+                            )
+                            continue
 
                         sample_file_name = file.split("/").pop()
 
@@ -535,10 +612,26 @@ def _process_inner_archive_file_names(
                     if pattern.match(
                         file,
                     ):
-                        extracted_file = os.path.join(
-                            extraction_path,
-                            file
-                        )
+                        try:
+                            extracted_file = _safe_archive_member_path(
+                                file,
+                                extraction_path,
+                            )
+                        except UnsafeArchivePathError as e:
+                            valid_mapping.append(
+                                FileMapping(
+                                    "",
+                                    archive_name,
+                                    file,
+                                    None,
+                                    None,
+                                    None,
+                                    mapping,
+                                    None,
+                                    str(e),
+                                )
+                            )
+                            continue
                         file_mapping = FileMapping(
                             extracted_file,
                             archive_name,
@@ -563,9 +656,9 @@ def _process_inner_archive_file_names(
                         if need_rename(file):
                             renamed_path = rename_file(file)
                             to_extract.add(file, renamed_path)
-                            file_mapping.file =  os.path.join(
-                                extraction_path,
+                            file_mapping.file = _safe_archive_member_path(
                                 renamed_path,
+                                extraction_path,
                             )
                         else:
                             to_extract.add(file, file)
