@@ -58,14 +58,28 @@ mapping:
   # Evtx
   - original_file_pattern: '.*\.evtx$'
     plugin_file: $plugin_folder/evtx.xml
-    mapping_label: evtx
+    mapping_label: windows_events
     output:
       - timeline
 
   # Evt: version 0.4.1
   - original_file_pattern: '.*\.evt$'
     plugin_file: $plugin_folder/evt.xml
-    mapping_label: evtx
+    mapping_label: evt
+    output:
+      - timeline
+
+  # FastFind filesystem - since Ogre version 0.4.3
+  - archive_file_pattern: '.*fastfind.*\.xml$'
+    plugin_file: $plugin_folder/fastfind_file.xml
+    mapping_label: fastfind_file
+    output:
+      - timeline
+
+  # FastFind registry - since Ogre version 0.4.3
+  - archive_file_pattern: '.*fastfind.*\.xml$'
+    plugin_file: $plugin_folder/fastfind_registry.xml
+    mapping_label: fastfind_reg
     output:
       - timeline
 
@@ -78,7 +92,7 @@ mapping:
 
   # Firefox extensions
   - original_file_pattern: '.*\\firefox\\profiles\\.*\\extensions.json$'
-    plugin_file: $plugin_folder/chrome_extension.xml
+    plugin_file: $plugin_folder/firefox_extension.xml
     mapping_label: firefox_extension
     output:
       - timeline
@@ -93,29 +107,35 @@ mapping:
   # # GetThis
   # - archive_file_pattern: 'GetThis\.csv$'
   #   plugin_file: $plugin_folder/get_this.xml
-  #   mapping_label: get_this
+  #   mapping_label: getthis
   #   output:
   #     - timeline
-
-  # Java Idx cache file
-  # as: I don't know where to find them
-  # - original_file_pattern: '.*\.idx$'
-  #   plugin_file: $plugin_folder/java_idx.xml
-  #   mapping_label: java_idx
-  #   output:
-  #   - timeline
-
-  # Jumplist
-  - original_file_pattern: '.*\\AppData\\Roaming\\Microsoft\\Windows\\Recent\\.*Destinations-ms$'
-    plugin_file: $plugin_folder/lnk_batched.xml
-    mapping_label: jumplist
-    output:
-      - timeline
 
   # i30
   - archive_file_pattern: '.*I30Info.*\.csv$'
     plugin_file: $plugin_folder/i30_info.xml
     mapping_label: i30info
+    output:
+      - timeline
+
+  # Internet Explorer 10+ WebCache history
+  - original_file_pattern: '.*\\AppData\\Local\\Microsoft\\Windows\\WebCache\\WebCacheV[0-9]+\.dat$'
+    plugin_file: $plugin_folder/ie_webcache.xml
+    mapping_label: ie_webcache_history
+    output:
+      - timeline
+
+  # Java webstart Idx cache file
+  - original_file_pattern: '.*java\\.*\\.*cache\\.*\\cache.idx$'
+    plugin_file: $plugin_folder/java_idx.xml
+    mapping_label: java_idx
+    output:
+      - timeline
+
+  # Jumplist
+  - original_file_pattern: '.*\\AppData\\Roaming\\Microsoft\\Windows\\Recent\\.*Destinations-ms$'
+    plugin_file: $plugin_folder/lnk_batched.xml
+    mapping_label: jumplist
     output:
       - timeline
 
@@ -126,10 +146,17 @@ mapping:
     output:
       - timeline
 
+  # Object Info - since Ogre version 0.4.1
+  - archive_file_pattern: "GetObjInfo.csv$"
+    plugin_file: $plugin_folder/object_info.xml
+    mapping_label: objinfo
+    output:
+      - timeline
+
   # NTFSInfo
   - archive_file_pattern: 'NTFSInfo.*\.csv$'
     plugin_file: $plugin_folder/ntfs_info.xml
-    mapping_label: ntfs_info
+    mapping_label: ntfsinfo
     output:
       - timeline
 
@@ -148,14 +175,14 @@ mapping:
       - timeline
 
   # Pca App Launch record
-  - archive_file_pattern: '.*\\PcaAppLaunch.*\.csv$'
+  - archive_file_pattern: '.*\\PcaAppLaunch.*\.txt$'
     plugin_file: $plugin_folder/pca_app_launch.xml
     mapping_label: pca_app_launch
     output:
       - timeline
 
   # Pca General record
-  - archive_file_pattern: '.*\\PcaGeneral.*\.csv$'
+  - archive_file_pattern: '.*\\PcaGeneral.*\.txt$'
     plugin_file: $plugin_folder/pca_general_record.xml
     mapping_label: pca_general_record
     output:
@@ -169,7 +196,6 @@ mapping:
       - timeline
 
   # Recycle Bin
-  # as: le chemin est un peu mystérieux pour moi
   - original_file_pattern: '\\\$Recycle.Bin\\*.$'
     plugin_file: $plugin_folder/recycle_bin.xml
     mapping_label: recycle_bin
@@ -183,19 +209,19 @@ mapping:
     output:
       - timeline
 
-  # USNInfo
-  - archive_file_pattern: 'USNInfo.*\.csv$'
-    plugin_file: $plugin_folder/usn_info.xml
-    mapping_label: usn_info
+  # System Info - since Ogre version 0.4.1
+  - archive_file_pattern: "Systeminfo.csv$"
+    plugin_file: $plugin_folder/system_info.xml
+    mapping_label: systeminfo
     output:
       - timeline
 
-  # # Volstat
-  # - archive_file_pattern: 'volstats\.csv$'
-  #   plugin_file: $plugin_folder/volstat.xml
-  #   mapping_label: volstat
-  #   output:
-  #     - fine
+  # USNInfo
+  - archive_file_pattern: 'USNInfo.*\.csv$'
+    plugin_file: $plugin_folder/usn_info.xml
+    mapping_label: usninfo
+    output:
+      - timeline
 
   # WER reports
   - archive_file_pattern: '.*WER/.*Report\.wer.*$'
@@ -207,9 +233,11 @@ mapping:
   ###############
   #### Hives ####
   ###############
+
+  # reg_system_info from SYSTEM and SOFTWARE hives - since Ogre version 0.4.1
   - original_file_pattern: '.*\\(?:SYSTEM|SOFTWARE)$'
     plugin_file: $plugin_folder/registry/reg_system_info.xml
-    mapping_label: reg_system_info
+    mapping_label: reg_systeminfo
     output:
       - timeline
 
@@ -218,7 +246,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\SOFTWARE$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKLM\\Software
     output:
       - timeline
@@ -226,7 +254,7 @@ mapping:
   # Autoruns Persistence mechanisms from the Software Registry - since Ogre version 0.4.1
   - original_file_pattern: '.*\\SOFTWARE$'
     plugin_file: $plugin_folder/registry/autoruns_software.xml
-    mapping_label: autorun_hive
+    mapping_label: reg_autoruns
     output:
       - timeline
 
@@ -247,7 +275,7 @@ mapping:
   # Extract scheduled tasks
   - original_file_pattern: '.*\\SOFTWARE$'
     plugin_file: $plugin_folder/registry/scheduled_task.xml
-    mapping_label: scheduled_task
+    mapping_label: scheduled_tasks
     output:
       - timeline
 
@@ -277,7 +305,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\SYSTEM$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKLM\\System
     output:
       - timeline
@@ -292,7 +320,7 @@ mapping:
   # Autoruns Persistence mechanisms from the System Registry - since Ogre version 0.4.1
   - original_file_pattern: '.*\\SYSTEM$'
     plugin_file: $plugin_folder/registry/autoruns_system.xml
-    mapping_label: autorun_hive
+    mapping_label: reg_autoruns
     output:
       - timeline
 
@@ -343,7 +371,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\SAM$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKLM\\Sam
     output:
       - timeline
@@ -353,7 +381,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\COMPONENTS$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKLM\\Components
     output:
       - timeline
@@ -363,7 +391,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\BCD-Template$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKLM\\BCDTemplate
     output:
       - timeline
@@ -373,7 +401,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\ELAM$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKLM\\ELAM
     output:
       - timeline
@@ -383,7 +411,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\DEFAULT$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKU
     output:
       - timeline
@@ -393,7 +421,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\Amcache\.hve$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\AmCache
     output:
       - timeline
@@ -401,14 +429,14 @@ mapping:
   # AMCache  drivers
   - original_file_pattern: '.*\\Amcache\.hve$'
     plugin_file: $plugin_folder/registry/amcache_driver.xml
-    mapping_label: am_cache_driver
+    mapping_label: amcache_driver
     output:
       - timeline
 
   # AMCache  files
   - original_file_pattern: '.*\\Amcache\.hve$'
     plugin_file: $plugin_folder/registry/amcache_files.xml
-    mapping_label: am_cache_file
+    mapping_label: amcache_file
     output:
       - timeline
 
@@ -424,7 +452,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\NTUSER\.DAT$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKU
     output:
       - timeline
@@ -446,7 +474,7 @@ mapping:
   # Autoruns Persistence mechanisms from the User Registry - since Ogre version 0.4.1
   - original_file_pattern: '.*\\NTUSER\.DAT$'
     plugin_file: $plugin_folder/registry/autoruns_user.xml
-    mapping_label: autorun_hive
+    mapping_label: reg_autoruns
     output:
       - timeline
 
@@ -483,7 +511,7 @@ mapping:
   #####
   - original_file_pattern: '.*\\UsrClass\.dat$'
     plugin_file: $plugin_folder/hive.xml
-    mapping_label: hive_key
+    mapping_label: reg_keys
     root_name: \\HKCR
     output:
       - timeline
@@ -505,6 +533,16 @@ mapping:
   # Shell Bag
   - original_file_pattern: '.*\\UsrClass\.dat$'
     plugin_file: $plugin_folder/registry/shell_bag.xml
-    mapping_label: shell_bag
+    mapping_label: shellbags
+    output:
+      - timeline
+
+  #####
+  ### SECURITY Hive
+  #####
+  - original_file_pattern: '.*\\SECURITY$'
+    plugin_file: $plugin_folder/hive.xml
+    mapping_label: reg_keys
+    root_name: \\HKLM\\SECURITY
     output:
       - timeline
