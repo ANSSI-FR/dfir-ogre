@@ -124,6 +124,13 @@ mapping:
     output:
       - timeline
 
+  # Internet Explorer 10+ WebCache history
+  - original_file_pattern: '.*\\AppData\\Local\\Microsoft\\Windows\\WebCache\\WebCacheV[0-9]+\.dat$'
+    plugin_file: $plugin_folder/ie_webcache.xml
+    mapping_label: ie_webcache_history
+    output:
+      - timeline
+
   # Java webstart Idx cache file
   - original_file_pattern: '.*java\\.*\\.*cache\\.*\\cache.idx$'
     plugin_file: $plugin_folder/java_idx.xml
