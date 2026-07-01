@@ -42,7 +42,6 @@ def run_plugin(args):
         format,
         date_format,
         args.timeline,
-        False,
         args.include_empty,
         {},
     )

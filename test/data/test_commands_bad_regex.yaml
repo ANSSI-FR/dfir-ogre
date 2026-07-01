@@ -19,6 +19,5 @@ output:
     format: jsonl
     date_format: iso
     with_timeline: false
-    with_qualifiers: false
     output_folder: .tmp/
     base_file_name: test

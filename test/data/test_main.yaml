@@ -20,7 +20,6 @@ output:
     format: jsonl
     date_format: iso
     with_timeline: false
-    with_qualifiers: false
     include_empty_field: false
     output_folder: $output_folder/$archive_name/$mapping_label/
     base_file_name: $file_name
@@ -30,7 +29,6 @@ output:
     format: jsonl
     date_format: iso
     with_timeline: false
-    with_qualifiers: false
     include_empty_field: false
     output_folder: $output_folder/$archive_name/$output_name/
     base_file_name: $file_name

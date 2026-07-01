@@ -20,6 +20,5 @@ output:
     format: jsonl
     date_format: iso
     with_timeline: false
-    with_qualifiers: false
     output_folder: $output_folder/$archive_name/$mapping_label/$dir_tree
     base_file_name: $parser_$file_name

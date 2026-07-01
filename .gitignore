@@ -14,3 +14,4 @@ htmlcov/
 # Virtual environments
 .venv
 uv.toml
+docs/

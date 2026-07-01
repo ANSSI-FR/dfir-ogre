@@ -169,7 +169,6 @@ def load_output_configuration(config_dict: dict[str, Any]) -> OutputConfiguratio
         raise KeyError(f"'base_file_name' not found in mapping definition: {config_dict}")
 
     with_timeline: bool = config_dict.pop("with_timeline", False)
-    with_qualifiers: bool = config_dict.pop("with_qualifiers", False)
     include_empty: bool = config_dict.pop("include_empty_field", False)
     string_dict: dict[str, str] = {}
 
@@ -182,7 +181,6 @@ def load_output_configuration(config_dict: dict[str, Any]) -> OutputConfiguratio
         format,
         date_format,
         with_timeline,
-        with_qualifiers,
         include_empty,
         string_dict,
     )

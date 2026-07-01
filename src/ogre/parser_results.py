@@ -12,7 +12,6 @@ class FileStat:
     format: str
     date_format: str
     with_timeline: bool
-    with_qualifiers: bool
     include_empty: bool
 
 
@@ -74,7 +73,6 @@ def apply_report_to_result(run_result: RunResult, report: Any) -> None:
                     file_report.format,
                     file_report.date_format,
                     file_report.with_timeline,
-                    file_report.with_qualifiers,
                     file_report.include_empty,
                 )
             )

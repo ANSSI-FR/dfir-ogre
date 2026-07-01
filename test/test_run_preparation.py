@@ -51,7 +51,6 @@ def _output(**overrides):
         "format": "jsonl",
         "date_format": "iso",
         "with_timeline": False,
-        "with_qualifiers": False,
         "include_empty": False,
         "parameters": {},
     }
@@ -63,7 +62,6 @@ def _output(**overrides):
         values["format"],
         values["date_format"],
         values["with_timeline"],
-        values["with_qualifiers"],
         values["include_empty"],
         values["parameters"],
     )
