@@ -94,6 +94,12 @@ def main() -> None:
         "--include_empty", action="store_true", help="When ``True`` empty fields are retained in the output."
     )
     _ = run.add_argument(
+        "--timeout",
+        type=int,
+        default=60,
+        help="Maximum number of seconds to wait for the plugin parser before terminating it.",
+    )
+    _ = run.add_argument(
         "--library", help="defines a python library that contains custom parsers"
     )
 

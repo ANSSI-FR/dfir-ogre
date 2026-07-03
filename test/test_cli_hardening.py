@@ -69,14 +69,132 @@ class TestCliHardening(TempFolderTestCase):
             timeline=False,
             include_empty=False,
             library=None,
+            timeout=5,
         )
 
         with mock.patch("ogre.plugin_runner.importlib.import_module") as import_module:
             with self.assertLogs("ogre.plugin_runner", level="ERROR") as logs:
-                plugin_runner.run_plugin(args)
+                plugin_runner._run_plugin_direct(args)
 
         import_module.assert_called_once_with("dfir_ogre_plugin_windows")
         self.assertIn("Unknown plugin 'NoSuchParser'", "\n".join(logs.output))
+
+    def test_run_plugin_terminates_child_on_keyboard_interrupt(self):
+        instances = []
+
+        class InterruptingProcess:
+            def __init__(self, target, args):
+                self.alive = True
+                self.closed = False
+                self.terminated = False
+                self.killed = False
+                instances.append(self)
+
+            def start(self):
+                return None
+
+            def join(self, timeout=None):
+                raise KeyboardInterrupt()
+
+            def is_alive(self):
+                return self.alive
+
+            def close(self):
+                if self.alive:
+                    raise ValueError("Cannot close a process while it is still running")
+                self.closed = True
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+                self.alive = False
+
+        args = SimpleNamespace(timeout=5)
+
+        with mock.patch("ogre.plugin_runner.multiprocessing.Process", InterruptingProcess):
+            with self.assertRaises(KeyboardInterrupt):
+                plugin_runner.run_plugin(args)
+
+        self.assertTrue(instances[0].terminated)
+        self.assertTrue(instances[0].killed)
+        self.assertTrue(instances[0].closed)
+
+    def test_run_plugin_terminates_hanging_child_after_timeout(self):
+        instances = []
+
+        class HangingProcess:
+            def __init__(self, target, args):
+                self.alive = True
+                self.closed = False
+                self.terminated = False
+                self.killed = False
+                self.join_calls = []
+                instances.append(self)
+
+            def start(self):
+                return None
+
+            def join(self, timeout=None):
+                self.join_calls.append(timeout)
+                return None
+
+            def is_alive(self):
+                return self.alive
+
+            def close(self):
+                if self.alive:
+                    raise ValueError("Cannot close a process while it is still running")
+                self.closed = True
+
+            def terminate(self):
+                self.terminated = True
+
+            def kill(self):
+                self.killed = True
+                self.alive = False
+
+        args = SimpleNamespace(timeout=5)
+
+        with mock.patch("ogre.plugin_runner.multiprocessing.Process", HangingProcess):
+            with self.assertLogs("ogre.plugin_runner", level="ERROR") as logs:
+                plugin_runner.run_plugin(args)
+
+        self.assertIn("parsing timed out", "\n".join(logs.output))
+        self.assertEqual(instances[0].join_calls, [5, 1, 1])
+        self.assertTrue(instances[0].terminated)
+        self.assertTrue(instances[0].killed)
+        self.assertTrue(instances[0].closed)
+
+    def test_run_plugin_supervision_does_not_start_sync_manager(self):
+        class FinishedProcess:
+            exitcode = 0
+
+            def __init__(self, target, args):
+                self.alive = False
+                self.closed = False
+
+            def start(self):
+                return None
+
+            def join(self, timeout=None):
+                return None
+
+            def is_alive(self):
+                return False
+
+            def close(self):
+                self.closed = True
+
+        args = SimpleNamespace(timeout=5)
+
+        with mock.patch(
+            "ogre.plugin_runner.multiprocessing.Manager",
+            side_effect=AssertionError("sync manager is not needed"),
+        ):
+            with mock.patch("ogre.plugin_runner.multiprocessing.Process", FinishedProcess):
+                plugin_runner.run_plugin(args)
 
     def test_report_builder_aggregates_summary_and_errors(self):
         builder = ReportBuilder(
@@ -290,6 +408,7 @@ class TestCliHardening(TempFolderTestCase):
         self.assertEqual(args.plugin_config, plugin_file)
         self.assertEqual(args.computer_name, "host1")
         self.assertEqual(args.output_folder, self.temp_folder)
+        self.assertEqual(args.timeout, 60)
 
     def test_parse_archive_writes_report_and_cleans_tmp_folder(self):
         report_folder = os.path.join(self.temp_folder, "report")
