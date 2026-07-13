@@ -13,6 +13,7 @@ output:
     format: jsonl
     date_format: iso_utc
     with_timeline: true
+    timeline_include_undated: true
     include_empty_field: false
     # /!\ do not change, this config is mandatory for the timeline CLI command
     output_folder: $output_folder
