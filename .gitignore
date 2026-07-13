@@ -15,3 +15,4 @@ htmlcov/
 .venv
 uv.toml
 docs/
+debug_data/

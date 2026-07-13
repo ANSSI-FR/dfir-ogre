@@ -156,6 +156,24 @@ output:
         result = e.exception.__str__()
         self.assertTrue("'date_format' not found" in result)
 
+    def test_conf_load_output_configuration_timeline_include_undated(self):
+        dict_conf = {
+            "type": "file",
+            "format": "json",
+            "date_format": "iso",
+            "with_timeline": True,
+            "timeline_include_undated": True,
+            "output_folder": ".tmp/",
+            "base_file_name": "test",
+        }
+
+        res = load_output_configuration(copy.deepcopy(dict_conf))
+        self.assertTrue(res.timeline_include_undated)
+
+        dict_conf.pop("timeline_include_undated")
+        res = load_output_configuration(copy.deepcopy(dict_conf))
+        self.assertFalse(res.timeline_include_undated)
+
     def test_conf_error(self):
         dict_conf:dict[str,Any] = {
             "plugin_prefixes": ["-ogre-anssi"],

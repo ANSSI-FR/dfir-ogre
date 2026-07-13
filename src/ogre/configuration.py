@@ -170,19 +170,21 @@ def load_output_configuration(config_dict: dict[str, Any]) -> OutputConfiguratio
 
     with_timeline: bool = config_dict.pop("with_timeline", False)
     include_empty: bool = config_dict.pop("include_empty_field", False)
+    timeline_include_undated: bool = config_dict.pop("timeline_include_undated", False)
     string_dict: dict[str, str] = {}
 
     for key, value in config_dict.items():
         string_dict[key] = str(value)
     return OutputConfiguration(
-        base_file_name,
-        output_folder,
-        type,
-        format,
-        date_format,
-        with_timeline,
-        include_empty,
-        string_dict,
+        base_file_name=base_file_name,
+        output_folder=output_folder,
+        output_type=type,
+        format=format,
+        date_format=date_format,
+        with_timeline=with_timeline,
+        timeline_include_undated=timeline_include_undated,
+        include_empty=include_empty,
+        params=string_dict,
     )
 
 

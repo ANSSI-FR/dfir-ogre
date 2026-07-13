@@ -56,14 +56,14 @@ def _output(**overrides):
     }
     values.update(overrides)
     return OutputConfiguration(
-        values["base_file_name"],
-        values["output_folder"],
-        values["output_type"],
-        values["format"],
-        values["date_format"],
-        values["with_timeline"],
-        values["include_empty"],
-        values["parameters"],
+        base_file_name=values["base_file_name"],
+        output_folder=values["output_folder"],
+        output_type=values["output_type"],
+        format=values["format"],
+        date_format=values["date_format"],
+        with_timeline=values["with_timeline"],
+        include_empty=values["include_empty"],
+        params=values["parameters"],
     )
 
 

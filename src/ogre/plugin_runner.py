@@ -92,14 +92,14 @@ def _run_plugin_direct(args):
         date_format = args.output_date_format
 
     rust_output = OutputConfiguration(
-        output_name,
-        args.output_folder,
-        "file",
-        format,
-        date_format,
-        args.timeline,
-        args.include_empty,
-        {},
+        base_file_name=output_name,
+        output_folder=args.output_folder,
+        output_type="file",
+        format=format,
+        date_format=date_format,
+        with_timeline=args.timeline,
+        include_empty=args.include_empty,
+        params={},
     )
 
     plugin_file = args.plugin_config
