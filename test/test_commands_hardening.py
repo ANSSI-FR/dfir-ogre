@@ -88,20 +88,26 @@ class TestCommandsHardening(TempFolderTestCase):
         self.assertEqual(original_entry.metadata.computer, "SampleOrc")
         self.assertEqual(original_entry.metadata.archive, "SampleOrc.7z")
         self.assertEqual(original_entry.metadata.subarchive, "Event.7z")
+        archive_filename = original_entry.metadata.archive_filename
+        creation_date = original_entry.metadata.creation_date
+        modif_date = original_entry.metadata.modif_date
+        assert archive_filename is not None
+        assert creation_date is not None
+        assert modif_date is not None
         self.assertIn(
             "Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
-            original_entry.metadata.archive_filename,
+            archive_filename,
         )
         self.assertEqual(
             original_entry.metadata.original_filename,
             "\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
         )
         self.assertEqual(
-            original_entry.metadata.creation_date.isoformat(),
+            creation_date.isoformat(),
             "2021-11-30T11:36:15.818000+00:00",
         )
         self.assertEqual(
-            original_entry.metadata.modif_date.isoformat(),
+            modif_date.isoformat(),
             "2021-11-30T11:36:20.364000+00:00",
         )
         self.assertEqual(

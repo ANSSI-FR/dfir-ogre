@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timezone
+from typing import Any
 from unittest import TestCase
 
 from dfir_ogre_common import OutputConfiguration
@@ -67,9 +68,9 @@ def _output(**overrides):
     )
 
 
-def _configuration(**overrides):
+def _configuration(**overrides: Any) -> Configuration:
     rawjson = _output()
-    values = {
+    values: dict[str, Any] = {
         "plugin_prefixes": ["test"],
         "case": "test",
         "dir_tree": "",
@@ -243,11 +244,15 @@ class TestBatchEntryBuilder(TempFolderTestCase):
             metadata.original_filename, "\\Windows\\System32\\BITS_jobs.txt"
         )
         self.assertEqual(metadata.vss, "{00000000-0000-0000-0000-000000000000}")
+        creation_date = metadata.creation_date
+        modif_date = metadata.modif_date
+        assert creation_date is not None
+        assert modif_date is not None
         self.assertEqual(
-            metadata.creation_date.isoformat(), "2021-11-30T11:36:15.818000+00:00"
+            creation_date.isoformat(), "2021-11-30T11:36:15.818000+00:00"
         )
         self.assertEqual(
-            metadata.modif_date.isoformat(), "2021-11-30T11:36:20.364000+00:00"
+            modif_date.isoformat(), "2021-11-30T11:36:20.364000+00:00"
         )
 
     def test_build_entry_raises_key_error_for_unknown_output_reference(self):
@@ -500,20 +505,26 @@ class TestRunPreparationOrchestration(TempFolderTestCase):
         self.assertEqual(original_entry.metadata.computer, "SampleOrc")
         self.assertEqual(original_entry.metadata.archive, "SampleOrc.7z")
         self.assertEqual(original_entry.metadata.subarchive, "Event.7z")
+        archive_filename = original_entry.metadata.archive_filename
+        creation_date = original_entry.metadata.creation_date
+        modif_date = original_entry.metadata.modif_date
+        assert archive_filename is not None
+        assert creation_date is not None
+        assert modif_date is not None
         self.assertIn(
             "Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
-            original_entry.metadata.archive_filename,
+            archive_filename,
         )
         self.assertEqual(
             original_entry.metadata.original_filename,
             "\\Windows\\System32\\winevt\\Logs\\Microsoft-Windows-Kernel-EventTracing%4Admin.evtx",
         )
         self.assertEqual(
-            original_entry.metadata.creation_date.isoformat(),
+            creation_date.isoformat(),
             "2021-11-30T11:36:15.818000+00:00",
         )
         self.assertEqual(
-            original_entry.metadata.modif_date.isoformat(),
+            modif_date.isoformat(),
             "2021-11-30T11:36:20.364000+00:00",
         )
         self.assertEqual(

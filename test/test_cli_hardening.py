@@ -1,8 +1,12 @@
 import json
 import os
 import sys
+from multiprocessing.managers import SyncManager
 from types import SimpleNamespace
+from typing import cast
 from unittest import mock
+
+from dfir_ogre_common import BatchEntry
 
 from ogre import archive_runner, cli, plugin_runner, process_runner
 from ogre.plugin_runner import parse_params
@@ -268,10 +272,14 @@ class TestCliHardening(TempFolderTestCase):
                 return False
 
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
-        batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
+        batch_entry = cast(
+            BatchEntry,
+            SimpleNamespace(file="input.txt", metadata=SimpleNamespace()),
+        )
+        manager = cast(SyncManager, FakeManager())
 
         with mock.patch("ogre.process_runner.multiprocessing.Process", FinishedProcess):
-            result = process_runner.run_parser_with_timeout(batch_entry, config, FakeManager())
+            result = process_runner.run_parser_with_timeout(batch_entry, config, manager)
 
         self.assertIs(result, expected)
 
@@ -294,11 +302,15 @@ class TestCliHardening(TempFolderTestCase):
                 return False
 
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
-        batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
+        batch_entry = cast(
+            BatchEntry,
+            SimpleNamespace(file="input.txt", metadata=SimpleNamespace()),
+        )
+        manager = cast(SyncManager, FakeManager())
 
         with mock.patch("ogre.process_runner.multiprocessing.Process", FinishedWithoutResult):
             with self.assertRaises(Exception) as context:
-                process_runner.run_parser_with_timeout(batch_entry, config, FakeManager())
+                process_runner.run_parser_with_timeout(batch_entry, config, manager)
 
         self.assertEqual(
             str(context.exception),
@@ -344,11 +356,15 @@ class TestCliHardening(TempFolderTestCase):
                 self.alive = False
 
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", False, 5)
-        batch_entry = SimpleNamespace(file="input.txt", metadata=SimpleNamespace())
+        batch_entry = cast(
+            BatchEntry,
+            SimpleNamespace(file="input.txt", metadata=SimpleNamespace()),
+        )
+        manager = cast(SyncManager, FakeManager())
 
         with mock.patch("ogre.process_runner.multiprocessing.Process", HangingProcess):
             with self.assertRaises(Exception) as context:
-                process_runner.run_parser_with_timeout(batch_entry, config, FakeManager())
+                process_runner.run_parser_with_timeout(batch_entry, config, manager)
 
         self.assertIn("parsing timed out", str(context.exception))
         self.assertEqual(instances[0].join_calls, [config.timeout, 1, 1])
@@ -418,7 +434,7 @@ class TestCliHardening(TempFolderTestCase):
         os.makedirs(tmp_folder, exist_ok=True)
 
         run_config = OgreRunConfiguration(
-            [SimpleNamespace(file="input.txt")],
+            [cast(BatchEntry, SimpleNamespace(file="input.txt"))],
             "plugin.xml",
             "mapping",
             "module",
@@ -501,10 +517,11 @@ class TestCliHardening(TempFolderTestCase):
                 self.alive = False
 
         config = OgreRunConfiguration([], "plugin.xml", "mapping", "module", "Parser", True, 5)
+        manager = cast(SyncManager, FakeManager())
 
         with mock.patch("ogre.process_runner.multiprocessing.Process", HangingProcess):
             with self.assertRaises(Exception) as context:
-                process_runner.run_batch_parser_with_timeout(config, FakeManager())
+                process_runner.run_batch_parser_with_timeout(config, manager)
 
         self.assertIn("parsing timed out", str(context.exception))
         self.assertEqual(instances[0].join_calls, [config.timeout, 1, 1])
