@@ -141,7 +141,7 @@ mapping:
       - timeline
 
   # Lnk
-  - original_file_pattern: '.*\.lnk$'
+  - original_file_pattern: '(?:.*\.lnk|.*\\SYSTEM)$'
     plugin_file: $plugin_folder/lnk_batched.xml
     mapping_label: lnk
     output:
@@ -274,7 +274,7 @@ mapping:
       - timeline
 
   # Extract scheduled tasks
-  - original_file_pattern: '.*\\SOFTWARE$'
+  - original_file_pattern: '.*\\(?:SOFTWARE|SYSTEM)$'
     plugin_file: $plugin_folder/registry/scheduled_task.xml
     mapping_label: scheduled_tasks
     output:
@@ -532,7 +532,7 @@ mapping:
       - timeline
 
   # Shell Bag
-  - original_file_pattern: '.*\\UsrClass\.dat$'
+  - original_file_pattern: '.*\\(?:UsrClass\.dat|SYSTEM)$'
     plugin_file: $plugin_folder/registry/shell_bag.xml
     mapping_label: shellbags
     output:

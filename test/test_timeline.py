@@ -20,4 +20,4 @@ class TestMain(TestCase):
         with open('.tmp/timeline/WXPSP2.timeline.csv', 'r') as file:
             line_count = sum(1 for line in file)
 
-        self.assertEqual(line_count,184434)
+        self.assertEqual(line_count,184505)
