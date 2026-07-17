@@ -1,6 +1,8 @@
 from typing import Any
 import copy
 import os
+import re
+from pathlib import Path
 from unittest import TestCase
 
 import yaml
@@ -329,3 +331,62 @@ output:
         self.assertEqual(conf.report_folder, f"{case}_report")
         self.assertTrue(conf.temp_folder.startswith( f".tmp/{case}"))
         self.assertEqual(conf.plugin_folder, f"{case}/conf")
+
+    def test_batched_windows_plugin_mappings_include_system_hive(self):
+        repository_root = Path(__file__).resolve().parents[1]
+        configuration_files = (
+            "test/data/ogre_timeline.yaml",
+            "configuration/ogre.yaml",
+            "configuration/ogre_docker.yaml",
+            "configuration/ogre_timeline.yaml",
+            "configuration/ogre_timeline_docker.yaml",
+        )
+        expected_patterns = {
+            "lnk": r"(?:.*\.lnk|.*\\SYSTEM)$",
+            "scheduled_tasks": r".*\\(?:SOFTWARE|SYSTEM)$",
+            "shellbags": r".*\\(?:UsrClass\.dat|SYSTEM)$",
+        }
+        primary_paths = {
+            "lnk": r"C:\Users\alice\Desktop\sample.lnk",
+            "scheduled_tasks": r"C:\Windows\System32\config\SOFTWARE",
+            "shellbags": (
+                r"C:\Users\alice\AppData\Local\Microsoft\Windows\UsrClass.dat"
+            ),
+        }
+        system_hive = r"C:\Windows\System32\config\SYSTEM"
+
+        for relative_path in configuration_files:
+            with self.subTest(configuration=relative_path):
+                document = yaml.safe_load(
+                    (repository_root / relative_path).read_text(encoding="utf-8")
+                )
+                mappings = document["mapping"]
+                mappings_by_label = {
+                    mapping["mapping_label"]: mapping for mapping in mappings
+                }
+
+                for label, expected_pattern in expected_patterns.items():
+                    actual_pattern = mappings_by_label[label][
+                        "original_file_pattern"
+                    ]
+                    self.assertEqual(actual_pattern, expected_pattern)
+                    compiled = re.compile(actual_pattern, re.IGNORECASE)
+                    self.assertIsNotNone(compiled.match(primary_paths[label]))
+                    self.assertIsNotNone(compiled.match(system_hive))
+
+                lnk_mappings = [
+                    mapping
+                    for mapping in mappings
+                    if mapping["plugin_file"].endswith("/lnk_batched.xml")
+                ]
+                system_match_count = sum(
+                    bool(
+                        re.match(
+                            mapping["original_file_pattern"],
+                            system_hive,
+                            re.IGNORECASE,
+                        )
+                    )
+                    for mapping in lnk_mappings
+                )
+                self.assertEqual(system_match_count, 1)
