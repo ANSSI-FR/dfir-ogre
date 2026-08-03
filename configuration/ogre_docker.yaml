@@ -20,6 +20,7 @@ output:
     format: jsonl
     date_format: iso_utc
     with_timeline: true
+    timeline_include_undated: false
     include_empty_field: false
     output_folder: $output_folder/timeline/$mapping_label/$computer_name
     base_file_name: $file_name
@@ -29,6 +30,7 @@ output:
     format: normalized_csv
     date_format: iso_utc
     with_timeline: false
+    timeline_include_undated: false
     include_empty_field: true
     output_folder: $output_folder/raw_data/$mapping_label/$computer_name
     base_file_name: $file_name
