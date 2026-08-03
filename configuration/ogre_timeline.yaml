@@ -492,6 +492,13 @@ mapping:
     output:
       - timeline
 
+  # Extracts Windows 7 and later Explorer search history from WordWheelQuery
+  - original_file_pattern: '.*\\NTUSER\.DAT$'
+    plugin_file: $plugin_folder/registry/explorer_search_history.xml
+    mapping_label: explorer_search_history
+    output:
+      - timeline
+
   # informations about applications and files accessed (windows >=10)
   - original_file_pattern: '.*\\NTUSER\.DAT$'
     plugin_file: $plugin_folder/registry/recent_app.xml
