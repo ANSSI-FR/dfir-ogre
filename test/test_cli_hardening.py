@@ -1,3 +1,4 @@
+import importlib.metadata
 import json
 import os
 import sys
@@ -235,6 +236,40 @@ class TestCliHardening(TempFolderTestCase):
         self.assertEqual(report.summary[0].time, 3.25)
         self.assertEqual(len(report.summary[0].errors), 1)
 
+    def test_report_builder_includes_installed_ogre_version(self):
+        builder = ReportBuilder(
+            "2026-06-16T00:00:00+00:00",
+            "dfir-ogre orc",
+            "host1",
+            "orc1",
+            ".tmp/output",
+        )
+
+        with mock.patch(
+            "importlib.metadata.version",
+            side_effect={"dfir-ogre": "2.1.0"}.__getitem__,
+        ):
+            report = builder.get_report()
+
+        self.assertEqual(report.ogre_version, "2.1.0")
+
+    def test_report_builder_uses_unknown_when_distribution_metadata_is_missing(self):
+        builder = ReportBuilder(
+            "2026-06-16T00:00:00+00:00",
+            "dfir-ogre orc",
+            "host1",
+            "orc1",
+            ".tmp/output",
+        )
+
+        with mock.patch(
+            "importlib.metadata.version",
+            side_effect=importlib.metadata.PackageNotFoundError,
+        ):
+            report = builder.get_report()
+
+        self.assertEqual(report.ogre_version, "unknown")
+
     def test_dataclass_json_encoder_serializes_report_dataclasses(self):
         builder = ReportBuilder(
             "2026-06-16T00:00:00+00:00",
@@ -245,8 +280,15 @@ class TestCliHardening(TempFolderTestCase):
         )
         builder.add_result(make_run_result(rows=4, time_s=1.0), "input.txt")
 
-        encoded = json.loads(json.dumps(builder.get_report(), cls=DataclassJSONEncoder))
+        with mock.patch(
+            "importlib.metadata.version",
+            return_value="2.1.0",
+        ):
+            encoded = json.loads(
+                json.dumps(builder.get_report(), cls=DataclassJSONEncoder)
+            )
 
+        self.assertEqual(encoded["ogre_version"], "2.1.0")
         self.assertEqual(encoded["computer"], "host1")
         self.assertEqual(encoded["summary"][0]["rows"], 4)
         self.assertEqual(encoded["run_results"][0]["metadata"]["computer"], "host1")
@@ -452,21 +494,29 @@ class TestCliHardening(TempFolderTestCase):
             tmp_folder=tmp_folder,
         )
 
-        with mock.patch("ogre.archive_runner.prepare_runs", return_value=prepared):
-            with mock.patch("ogre.archive_runner.multiprocessing.Manager", return_value=object()):
+        with mock.patch(
+            "importlib.metadata.version",
+            return_value="2.1.0",
+        ):
+            with mock.patch("ogre.archive_runner.prepare_runs", return_value=prepared):
                 with mock.patch(
-                    "ogre.archive_runner.run_parser_with_timeout",
-                    return_value=make_run_result(rows=6, time_s=1.0),
-                ) as runner:
-                    report = archive_runner.parse_archive(
-                        "config.yaml",
-                        "archive.7z",
-                        {"case": "case1"},
-                        None,
-                        "dfir-ogre orc",
-                    )
+                    "ogre.archive_runner.multiprocessing.Manager",
+                    return_value=object(),
+                ):
+                    with mock.patch(
+                        "ogre.archive_runner.run_parser_with_timeout",
+                        return_value=make_run_result(rows=6, time_s=1.0),
+                    ) as runner:
+                        report = archive_runner.parse_archive(
+                            "config.yaml",
+                            "archive.7z",
+                            {"case": "case1"},
+                            None,
+                            "dfir-ogre orc",
+                        )
 
         runner.assert_called_once()
+        self.assertEqual(report.ogre_version, "2.1.0")
         self.assertEqual(report.computer, "host1")
         self.assertEqual(report.summary[0].rows, 6)
         self.assertFalse(os.path.exists(tmp_folder))
@@ -475,6 +525,7 @@ class TestCliHardening(TempFolderTestCase):
         with open(report_file) as f:
             report_json = json.load(f)
 
+        self.assertEqual(report_json["ogre_version"], "2.1.0")
         self.assertEqual(report_json["computer"], "host1")
         self.assertEqual(report_json["summary"][0]["rows"], 6)
 

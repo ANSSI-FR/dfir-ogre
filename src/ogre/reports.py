@@ -1,3 +1,4 @@
+import importlib.metadata
 import json
 import logging
 from dataclasses import asdict, dataclass, is_dataclass
@@ -7,6 +8,13 @@ from typing_extensions import override
 from .parser_results import RunResult
 
 logger = logging.getLogger(__name__)
+
+
+def _get_ogre_version() -> str:
+    try:
+        return importlib.metadata.version("dfir-ogre")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
 
 
 @dataclass
@@ -26,6 +34,7 @@ class ArchiveReport:
 
     timestamp: str
     command_line: str
+    ogre_version: str
     computer: str
     orc_id: str
     output_folder: str
@@ -97,6 +106,7 @@ class ReportBuilder:
         return ArchiveReport(
             self.timestamp,
             self.command_line,
+            _get_ogre_version(),
             self.computer,
             self.orc_id,
             self.output_folder,
