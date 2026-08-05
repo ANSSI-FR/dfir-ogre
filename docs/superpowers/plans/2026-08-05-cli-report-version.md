@@ -188,7 +188,7 @@ Expected: `Ran 4 tests` followed by `OK`.
 Run:
 
 ```bash
-uv run python -m unittest discover -s test -v
+uv run python -m unittest discover -v
 ```
 
 Expected: all tests pass with `OK`.
