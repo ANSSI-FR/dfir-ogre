@@ -196,6 +196,9 @@ def handle_timeline(args):
 
     data_folder = config_dict["output_folder"]
     Path(data_folder).mkdir(parents=True, exist_ok=True)
+    
+    timeline_separator = config_dict.get("timeline_separator", ",")
+    timeline_timestamp_format = config_dict.get("timeline_timestamp_format", "default")
 
     global_vars = {"report_folder": str(timeline_folder)}
     if args.case:
@@ -214,7 +217,7 @@ def handle_timeline(args):
     Path(tmp_database_folder).mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Creating timeline from extracted artefacts: '{timeline_file}'")
-    build_timeline(data_folder,timeline_file,tmp_database_folder)
+    build_timeline(data_folder,timeline_file,tmp_database_folder, timeline_separator, timeline_timestamp_format)
 
     shutil.rmtree(tmp_folder, ignore_errors=True)
     shutil.rmtree(data_folder, ignore_errors=True)

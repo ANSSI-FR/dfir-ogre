@@ -12,6 +12,10 @@ plugin_folder: dfir-ogre-plugin-windows/configuration/ # configuration folder th
 # log_level: INFO # ERROR DEBUG
 # log_max_bytes: 5242880 #1024*1024*5 (5Mb)
 # log_backup_count: 3
+# Optional timeline separator (default is ',')
+# timeline_separator: "|"
+# Optional timeline output timestamp format (default is iso)
+# timeline_timestamp_format: "DATE|TIME"
 
 output:
   timeline:
