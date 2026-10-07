@@ -20,6 +20,7 @@ from .orc_mapping import (
     build_original_lookup,
     compile_mapping_pattern,
     partition_mappings,
+    source_relative_parent,
 )
 from .sevenzip_rename_factory import (
     MAX_FILE_NAME_BYTE_LENGTH,
@@ -341,6 +342,9 @@ def _match_original_files(
 
 
     for original_file in original_files:
+        nested_member = Path(original_file.archive).relative_to(
+            Path(archive_extract_folder) / INNER_TEMP_ARCHIVE
+        ).as_posix()
         for mapping in original_file_mapping:
             if mapping.original_file_pattern:
                 # skip windows short name ex: \SVA592~1.PF short names are duplicates in the GetThis.csv file
@@ -378,6 +382,9 @@ def _match_original_files(
                                 mapping,
                                 original_file.vss,
                                 str(e),
+                                source_relative_parent(
+                                    original_file.sample_name, nested_member
+                                ),
                             )
                         )
                         continue
@@ -392,6 +399,9 @@ def _match_original_files(
                         mapping,
                         original_file.vss,
                         None,
+                        source_relative_parent(
+                            original_file.sample_name, nested_member
+                        ),
                     )
 
                     to_extract = file_to_extract.get(original_file.archive, FilesToExtract())
@@ -494,6 +504,7 @@ def _match_archive_files(
                                     mapping,
                                     None,
                                     str(e),
+                                    source_relative_parent(file),
                                 )
                             )
                             continue
@@ -510,6 +521,7 @@ def _match_archive_files(
                             mapping,
                             None,
                             None,
+                            source_relative_parent(file),
                         )
                         if len(sample_file_name) > MAX_FILE_NAME_BYTE_LENGTH:
                             file_mapping.error = f"File name is too long '{file}', length:{len(sample_file_name)}, maximum allowed:{MAX_FILE_NAME_BYTE_LENGTH}, , archive: '{archive}'"
@@ -592,6 +604,9 @@ def _process_inner_archive_file_names(
     Returns the subset of *file_list* that should be extracted.
     """
     to_extract = FilesToExtract()
+    nested_member = Path(inner_archive).relative_to(
+        Path(archive_extract_folder) / INNER_TEMP_ARCHIVE
+    ).as_posix()
 
     # match files in the archive agains a regexp
     with py7zr.SevenZipFile(inner_archive, password=inner_archive_password) as f:
@@ -629,6 +644,7 @@ def _process_inner_archive_file_names(
                                     mapping,
                                     None,
                                     str(e),
+                                    source_relative_parent(file, nested_member),
                                 )
                             )
                             continue
@@ -642,6 +658,7 @@ def _process_inner_archive_file_names(
                             mapping,
                             None,
                             None,
+                            source_relative_parent(file, nested_member),
                         )
 
                         original = file_dict.get(file)

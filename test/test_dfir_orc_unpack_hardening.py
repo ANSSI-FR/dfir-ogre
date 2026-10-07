@@ -1,4 +1,7 @@
 import os
+import csv
+import io
+from pathlib import Path
 
 import py7zr
 
@@ -125,3 +128,54 @@ class TestDfirOrcUnpackHardening(TempFolderTestCase):
             load_archive_metadata(outcome_file)
 
         self.assertIn("'dfir-orc' root node not found", str(context.exception))
+
+
+class TestRelativePathProvenance(TempFolderTestCase):
+    def test_logical_parent_uses_member_and_nested_archive_paths(self):
+        from ogre.orc_mapping import source_relative_parent
+
+        self.assertEqual(source_relative_parent("a.evtx"), "")
+        self.assertEqual(source_relative_parent("logs/a.evtx"), "logs")
+        self.assertEqual(
+            source_relative_parent("logs/a.evtx", "collection/inner.7z"),
+            "collection/inner/logs",
+        )
+
+    def test_nested_archive_and_original_mappings_retain_logical_parent_after_rename(self):
+        inner_archive = os.path.join(self.temp_folder, "inner.7z")
+        main_archive = os.path.join(self.temp_folder, "main.7z")
+        long_name = "a" * 241 + ".evtx"
+        member = f"logs/{long_name}"
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(
+            ["SampleName", "FullName", "CreationDate", "LastModificationDate", "SnapshotID"]
+        )
+        writer.writerow([member, r"C:\Windows\test.evtx", "", "", ""])
+        source_member = Path(self.temp_folder) / "sample.evtx"
+        source_member.write_bytes(b"event")
+        source_csv = Path(self.temp_folder) / "source_GetThis.csv"
+        source_csv.write_text(csv_buffer.getvalue())
+        with py7zr.SevenZipFile(inner_archive, "w") as archive7z:
+            archive7z.write(source_member, member)
+            archive7z.write(source_csv, "GetThis.csv")
+        with py7zr.SevenZipFile(main_archive, "w") as archive7z:
+            archive7z.write(inner_archive, "collection/inner.7z")
+
+        mappings = [
+            Mapping(r".*\.evtx$", None, "unused.xml", "archive", True, False, 10, {}, []),
+            Mapping(None, r".*test\.evtx$", "unused.xml", "original", True, False, 10, {}, []),
+        ]
+        result = unpack_dfir_orc(main_archive, None, None, mappings, self.temp_folder)
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual(len(result.valid_mapping), 2)
+        self.assertEqual(
+            {mapping.relative_path for mapping in result.valid_mapping},
+            {"collection/inner/logs"},
+        )
+        self.assertEqual(
+            {mapping.mapping.mapping_label for mapping in result.valid_mapping},
+            {"archive", "original"},
+        )
+        self.assertTrue(all(Path(mapping.file).name != long_name for mapping in result.valid_mapping))

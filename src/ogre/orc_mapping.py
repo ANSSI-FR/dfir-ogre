@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from pathlib import PurePosixPath
 from typing import Collection, Optional
 
 from .configuration import Mapping
@@ -32,6 +33,7 @@ class FileMapping:
     mapping: Mapping
     vss: Optional[str]
     error: Optional[str]
+    relative_path: str = ""
 
 
 @dataclass
@@ -50,6 +52,20 @@ class NestedArchive:
 class OriginalFileMappingResult:
     name_mapping: list[OriginalNameMapping]
     errors: list[str]
+
+
+def source_relative_parent(
+    member_path: str, nested_archive_member: str | None = None
+) -> str:
+    """Return the logical parent of an archive member, without temp paths."""
+    parent = PurePosixPath(member_path.replace("\\", "/")).parent
+    parts = []
+    if nested_archive_member:
+        nested = PurePosixPath(nested_archive_member.replace("\\", "/"))
+        parts.append(nested.with_suffix("").as_posix())
+    if parent != PurePosixPath("."):
+        parts.append(parent.as_posix())
+    return "/".join(parts)
 
 
 def partition_mappings(
