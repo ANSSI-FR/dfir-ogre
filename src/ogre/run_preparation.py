@@ -705,7 +705,7 @@ def prepare_folder_runs(
         str(root), scanned.valid_mapping, runs, source_name=root.name
     )
     builder.finalize_output_names()
-    validate_concrete_folder_outputs(root, runs)
+    validate_concrete_folder_outputs(root, runs, exclusions)
 
     return PrepareRunResult(
         None,

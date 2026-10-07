@@ -266,3 +266,30 @@ class TestFolderPathPolicy(TempFolderTestCase):
         safe_runs = RunConfigGrouper()
         safe_runs.add(safe_entry, "plugin.xml", "all", "plugin.module", "Parser", False, 10)
         validate_concrete_folder_outputs(root, safe_runs)
+
+    def test_concrete_output_cannot_escape_its_prescan_exclusion(self):
+        from ogre.folder_input import validate_concrete_folder_outputs
+
+        root = self._root()
+        reserved = root / "generated"
+        runs = RunConfigGrouper()
+        escaped_entry = BatchEntry(
+            str(root / "source.evtx"),
+            RunConfiguration([_output(output_folder=str(root / "other"))], False, {}),
+            Metadata("host"),
+        )
+        runs.add(escaped_entry, "plugin.xml", "all", "plugin.module", "Parser", False, 10)
+
+        with self.assertRaises(ValueError):
+            validate_concrete_folder_outputs(root, runs, [reserved])
+
+        allowed_runs = RunConfigGrouper()
+        allowed_entry = BatchEntry(
+            str(root / "source.evtx"),
+            RunConfiguration([_output(output_folder=str(reserved / "logs"))], False, {}),
+            Metadata("host"),
+        )
+        allowed_runs.add(
+            allowed_entry, "plugin.xml", "all", "plugin.module", "Parser", False, 10
+        )
+        validate_concrete_folder_outputs(root, allowed_runs, [reserved])

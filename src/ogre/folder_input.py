@@ -124,12 +124,24 @@ def plan_folder_exclusions(
     return tuple(dict.fromkeys(excluded))
 
 
-def validate_concrete_folder_outputs(root: Path, runs: "RunConfigGrouper") -> None:
+def validate_concrete_folder_outputs(
+    root: Path,
+    runs: "RunConfigGrouper",
+    exclusions: Sequence[Path] | None = None,
+) -> None:
     """Reject mapped output folders that could overwrite the source root."""
     for run in runs.map.values():
         for entry in run.batch_entries:
             for output in entry.run_config.output:
-                _classify_destination(root, Path(output.output_folder), "Mapped output folder")
+                inside = _classify_destination(
+                    root, Path(output.output_folder), "Mapped output folder"
+                )
+                if inside is not None and exclusions is not None and not any(
+                    inside == area or area in inside.parents for area in exclusions
+                ):
+                    raise ValueError(
+                        f"Mapped output folder '{output.output_folder}' was not excluded before scanning"
+                    )
 
 
 def scan_folder(
