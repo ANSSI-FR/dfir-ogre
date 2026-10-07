@@ -4,7 +4,7 @@ import os
 import pkgutil
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from datetime import timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Literal
 
@@ -28,10 +28,18 @@ from .dfir_orc_unpack import (
     unpack_dfir_orc,
 )
 from .orc_mapping import compile_mapping_pattern
+from .output_naming import expand_relative_path
+
+
+@dataclass(frozen=True)
+class RunVariables:
+    computer_name: str
+    date: datetime
+    dir_tree: str | None
 
 
 class VariableResolver:
-    def __init__(self, configuration: Configuration, outcome: OrcOutcome):
+    def __init__(self, configuration: Configuration, outcome: OrcOutcome | RunVariables):
         self.configuration = configuration
         self.outcome = outcome
 
@@ -51,9 +59,11 @@ class VariableResolver:
         self,
         output: OutputConfiguration,
         archive: str,
+        *,
+        source_name: str | None = None,
     ) -> OutputConfiguration:
         resolved = copy.deepcopy(output)
-        archive_name = Path(archive).stem
+        archive_name = source_name if source_name is not None else Path(archive).stem
         output_folder = (
             resolved.output_folder.replace(
                 "$output_folder", self.configuration.output_folder
@@ -86,6 +96,7 @@ class VariableResolver:
         mapping_label: str,
         parser: str,
         file_path: str,
+        relative_path: str = "",
     ) -> OutputConfiguration:
         resolved = copy.deepcopy(output)
         file_name = Path(file_path).stem
@@ -101,14 +112,25 @@ class VariableResolver:
             .replace("$file_name", file_name)
             .replace("$computer_name", self.outcome.computer_name)
         )
+        resolved.output_folder = expand_relative_path(
+            resolved.output_folder, relative_path, filename=False
+        )
+        resolved.base_file_name = expand_relative_path(
+            resolved.base_file_name, relative_path, filename=True
+        )
+        if not resolved.output_folder:
+            raise ValueError("Resolved output folder is empty")
         return resolved
 
-    def resolve_plugin_file(self, mapping: Mapping, archive: str) -> str:
+    def resolve_plugin_file(
+        self, mapping: Mapping, archive: str, *, source_name: str | None = None
+    ) -> str:
+        archive_name = source_name if source_name is not None else Path(archive).stem
         return (
             mapping.plugin_file.replace(
                 "$output_folder", self.configuration.output_folder
             )
-            .replace("$archive_name", Path(archive).stem)
+            .replace("$archive_name", archive_name)
             .replace("$case", self.configuration.case)
             .replace("$plugin_folder", self.configuration.plugin_folder)
         )
@@ -117,8 +139,10 @@ class VariableResolver:
         self,
         mapping: Mapping,
         archive: str,
+        *,
+        source_name: str | None = None,
     ) -> dict[str, str | None]:
-        archive_name = Path(archive).stem
+        archive_name = source_name if source_name is not None else Path(archive).stem
         additional_params: dict[str, str | None] = {}
         for key, value in mapping.params.items():
             if isinstance(value, str):

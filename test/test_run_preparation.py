@@ -185,6 +185,98 @@ class TestVariableResolver(TestCase):
         self.assertEqual(mapping.plugin_file, "$plugin_folder/void.xml")
 
 
+class TestRelativePathResolver(TestCase):
+    def test_dotted_folder_name_is_preserved_in_all_source_templates(self):
+        from ogre.run_preparation import RunVariables
+
+        config = _configuration(
+            output={"rawjson": _output(output_folder="$output_folder/$archive_name")},
+            mapping=[
+                _mapping(
+                    plugin_file="$plugin_folder/$archive_name.xml",
+                    params={"source": "$archive_name"},
+                )
+            ],
+        )
+        resolver = VariableResolver(
+            config, RunVariables("host.v2", datetime(2025, 9, 4, tzinfo=timezone.utc), None)
+        )
+
+        self.assertEqual(
+            resolver.resolve_archive_output(
+                config.output["rawjson"], "/evidence/host.v2", source_name="host.v2"
+            ).output_folder,
+            ".tmp/output/host.v2",
+        )
+        self.assertEqual(
+            resolver.resolve_plugin_file(
+                config.mapping[0], "/evidence/host.v2", source_name="host.v2"
+            ),
+            "test/plugin_config/host.v2.xml",
+        )
+        self.assertEqual(
+            resolver.resolve_mapping_params(
+                config.mapping[0], "/evidence/host.v2", source_name="host.v2"
+            )["source"],
+            "host.v2",
+        )
+        self.assertEqual(
+            resolver.resolve_archive_output(config.output["rawjson"], "main.7z").output_folder,
+            ".tmp/output/main",
+        )
+        self.assertEqual(resolver.resolve_report_folder(), "/data/test/ogre/ogre_report")
+
+    def test_relative_path_keeps_output_directories_and_flattens_file_basename(self):
+        from ogre.run_preparation import RunVariables
+
+        config = _configuration(
+            output={
+                "rawjson": _output(
+                    output_folder="$output_folder/$relative_path",
+                    base_file_name="$relative_path/$file_name",
+                )
+            }
+        )
+        resolver = VariableResolver(
+            config, RunVariables("host.v2", datetime(2025, 9, 4, tzinfo=timezone.utc), None)
+        )
+        output = resolver.resolve_archive_output(
+            config.output["rawjson"], "/evidence/host.v2", source_name="host.v2"
+        )
+
+        root = resolver.resolve_run_output(output, "event", "Void", "/evidence/a.evtx")
+        nested = resolver.resolve_run_output(
+            output, "event", "Void", "/evidence/logs/a.evtx", relative_path="logs"
+        )
+        deep = resolver.resolve_run_output(
+            output, "event", "Void", "/evidence/a.evtx", relative_path="inner/logs"
+        )
+
+        self.assertEqual((root.output_folder, root.base_file_name), (".tmp/output", "a"))
+        self.assertEqual(
+            (nested.output_folder, nested.base_file_name),
+            (".tmp/output/logs", "logs_a"),
+        )
+        self.assertEqual(
+            (deep.output_folder, deep.base_file_name),
+            (".tmp/output/inner/logs", "inner_logs_a"),
+        )
+
+    def test_empty_resolved_output_folder_is_rejected(self):
+        from ogre.run_preparation import RunVariables
+
+        config = _configuration(
+            output={"rawjson": _output(output_folder="$relative_path")}
+        )
+        resolver = VariableResolver(
+            config, RunVariables("host", datetime(2025, 9, 4, tzinfo=timezone.utc), None)
+        )
+        output = resolver.resolve_archive_output(config.output["rawjson"], "/evidence/host")
+
+        with self.assertRaisesRegex(ValueError, "output folder"):
+            resolver.resolve_run_output(output, "event", "Void", "/evidence/a.evtx")
+
+
 class TestBatchEntryBuilder(TempFolderTestCase):
     def test_build_entry_preserves_metadata_and_resolved_output_contract(self):
         config = _configuration()
