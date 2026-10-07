@@ -15,6 +15,7 @@ from tabulate import tabulate
 from .archive_runner import handle_orc_archive as _handle_orc_archive
 from .archive_runner import parse_archive as _parse_archive
 from .commands import list_parsers
+from .folder_runner import handle_folder as _handle_folder
 from .logging import init_logger
 from .plugin_runner import run_plugin as _run_plugin
 from .timeline import build_timeline
@@ -34,6 +35,7 @@ def main() -> None:
     * ``plugin`` – Run a single plugin against a file.
     * ``orc`` – Unpack an ORC archive and run the configured parsers.
     * ``timeline`` – Same as ``orc`` but generates a a unique timeline CSV file.
+    * ``folder`` – Parse ordinary artifacts from one computer folder.
     """
 
 
@@ -70,6 +72,19 @@ def main() -> None:
         "--password",
         help="Optional archive password",
     )
+    # Run configured parsers against ordinary files from one computer folder
+    folder = sub_parser.add_parser(
+        "folder", help="Parse artifacts from one computer folder"
+    )
+    folder.set_defaults(func=_handle_folder)
+    _ = folder.add_argument("--folder", required=True, help="Artifact source folder")
+    _ = folder.add_argument(
+        "--configuration", required=True, help="The ogre yaml configuration file"
+    )
+    _ = folder.add_argument(
+        "--computer_name", help="Computer name (defaults to the folder name)"
+    )
+    _ = folder.add_argument("--case", default="default_case", help="The case name")
     # plugin parser
     run = sub_parser.add_parser("plugin", help="Execute a single OGRE parser (plugin) against a provided file.")
     _ = run.add_argument( "--filename", required=True, help="Path to the input file that the parser will process.")

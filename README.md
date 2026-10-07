@@ -69,6 +69,43 @@ dfir-ogre orc \
     --configuration dfir-ogre/configuration/ogre.yaml
 ```
 
+### Parse a folder of artifacts
+
+Use `folder` for ordinary files collected from one computer, without a DFIR-ORC
+archive or `Outcome.json`:
+
+```bash
+dfir-ogre folder \
+    --folder /evidence/host-01 \
+    --configuration my-ogre.yaml \
+    --computer_name host-01 \
+    --case sample_case
+```
+
+`--computer_name` is optional; it defaults to the input folder name. The folder
+is scanned recursively without following symbolic links. Each
+`archive_file_pattern` is matched, case-insensitively, against a path relative
+to the folder using `/` separators. The regex controls the depth: for example,
+`^logs/.*\.evtx$` selects EVTX files below `logs/`, while `^autoruns\.csv$`
+selects only a root-level file. Folder mode ignores `original_file_pattern`
+rules and their plugin XML; the default `ogre.yaml` may need additional
+archive-name rules for an ordinary artifact folder.
+
+Output definitions can use `$relative_path` in `output_folder` and
+`base_file_name` for both `folder` and `orc`:
+
+```yaml
+output_folder: $output_folder/$computer_name/$relative_path
+base_file_name: $relative_path/$file_name
+```
+
+For `logs/a.evtx`, `$relative_path` is `logs`: the output stays in a `logs/`
+directory and its base filename becomes `logs_a`. For a file at the input root,
+the variable is empty and the base filename remains `a`. Inside an ORC archive,
+the path also includes a nested archive's name, such as `inner/logs`. Distinct
+paths that flatten to the same base filename receive stable suffixes. Folder
+reports include the source folder and run ID; source artifacts stay in place.
+
 ## French Cybersecurity Agency (ANSSI)
 <img src="https://www.sgdsn.gouv.fr/files/styles/ds_image_paragraphe/public/files/Notre_Organisation/logo_anssi.png" alt="ANSSI logo" width="25%">
     
