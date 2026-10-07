@@ -2,12 +2,11 @@ import copy
 import importlib
 import os
 import pkgutil
-import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import timezone
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Literal
 
 import dateutil.parser
 import yaml
@@ -28,6 +27,7 @@ from .dfir_orc_unpack import (
     load_archive_metadata,
     unpack_dfir_orc,
 )
+from .orc_mapping import compile_mapping_pattern
 
 
 class VariableResolver:
@@ -367,7 +367,11 @@ class ArchiveRunPlanner:
 def load_config(
     conf_file: str,
     global_var: dict[str, str],
+    *,
+    pattern_scope: Literal["all", "archive"] = "all",
 ) -> tuple[Configuration, dict[str, PluginDefinition]]:
+    if pattern_scope not in ("all", "archive"):
+        raise ValueError(f"Unknown pattern scope: {pattern_scope}")
     with open(conf_file) as conf:
         config_dict = yaml.safe_load(conf)
 
@@ -376,20 +380,10 @@ def load_config(
 
     for mapping in config.mapping:
         if mapping.archive_file_pattern:
-            try:
-                re.compile(mapping.archive_file_pattern, re.IGNORECASE)
-            except Exception as error:
-                raise Exception(
-                    f"{error} in archive_file_pattern regex:'{mapping.archive_file_pattern}', mapping_label:'{mapping.mapping_label}'"
-                )
+            compile_mapping_pattern(mapping, "archive_file_pattern")
 
-        if mapping.original_file_pattern:
-            try:
-                re.compile(mapping.original_file_pattern, re.IGNORECASE)
-            except Exception as error:
-                raise Exception(
-                    f"{error} in original_file_pattern regex:'{mapping.original_file_pattern}', mapping_label:'{mapping.mapping_label}'"
-                )
+        if pattern_scope == "all" and mapping.original_file_pattern:
+            compile_mapping_pattern(mapping, "original_file_pattern")
 
     return config, plugins
 

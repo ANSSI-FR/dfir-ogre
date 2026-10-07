@@ -1,7 +1,10 @@
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 from unittest import TestCase
+
+import yaml
 
 from dfir_ogre_common import OutputConfiguration
 
@@ -430,6 +433,47 @@ class TestRunPreparationConfigLoading(TempFolderTestCase):
 
         self.assertEqual(config.case, "test")
         self.assertIn("Void", plugins)
+
+    def test_folder_scope_skips_invalid_original_name_regex(self):
+        config_path = Path(self.temp_folder) / "folder.yaml"
+        config_path.write_text(
+            yaml.safe_dump(
+                {
+                    "case": "test",
+                    "temp_folder": str(Path(self.temp_folder) / "tmp"),
+                    "output_folder": str(Path(self.temp_folder) / "out"),
+                    "plugin_folder": "test/plugin_config",
+                    "mapping": [
+                        {
+                            "archive_file_pattern": r".*\.evtx$",
+                            "plugin_file": "$plugin_folder/void.xml",
+                            "mapping_label": "archive",
+                            "output": ["raw"],
+                        },
+                        {
+                            "original_file_pattern": "[",
+                            "plugin_file": "missing.xml",
+                            "mapping_label": "original",
+                            "output": ["raw"],
+                        },
+                    ],
+                    "output": {
+                        "raw": {
+                            "type": "file",
+                            "format": "jsonl",
+                            "date_format": "iso",
+                            "output_folder": "$output_folder",
+                            "base_file_name": "$file_name",
+                        }
+                    },
+                }
+            )
+        )
+
+        config, _ = load_config(str(config_path), {}, pattern_scope="archive")
+        self.assertEqual(len(config.mapping), 2)
+        with self.assertRaisesRegex(Exception, "original_file_pattern"):
+            load_config(str(config_path), {})
 
     def test_load_plugin_parser_cache_is_owned_by_run_preparation(self):
         plugin_file = os.path.join("test", "plugin_config", "void.xml")
