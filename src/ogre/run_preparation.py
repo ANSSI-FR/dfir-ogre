@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Callable, Literal, Sequence
 
 import dateutil.parser
 import yaml
@@ -28,7 +28,13 @@ from .dfir_orc_unpack import (
     unpack_dfir_orc,
 )
 from .orc_mapping import compile_mapping_pattern
-from .output_naming import expand_relative_path
+from .folder_input import (
+    plan_folder_exclusions,
+    scan_folder,
+    validate_concrete_folder_outputs,
+    validate_folder_root,
+)
+from .output_naming import OutputNameRegistry, expand_relative_path
 
 
 @dataclass(frozen=True)
@@ -169,12 +175,20 @@ class BatchEntryBuilder:
     def __init__(
         self,
         configuration: Configuration,
-        outcome: OrcOutcome,
+        outcome: OrcOutcome | RunVariables,
         resolver: VariableResolver,
+        *,
+        metadata_factory: Callable[[str, FileMapping], Metadata] | None = None,
+        name_registry: OutputNameRegistry | None = None,
     ):
         self.configuration = configuration
         self.outcome = outcome
         self.resolver = resolver
+        self.metadata_factory = metadata_factory
+        self.name_registry = name_registry
+        self._pending_output_refresh: list[
+            tuple[BatchEntry, list[OutputConfiguration], bool, dict[str, str | None]]
+        ] = []
 
     def build(
         self,
@@ -182,24 +196,63 @@ class BatchEntryBuilder:
         archive_outputs: dict[str, OutputConfiguration],
         file_mapping: FileMapping,
         selection: ParserSelection,
+        *,
+        source_name: str | None = None,
     ) -> BatchEntry:
         mapping = file_mapping.mapping
-        output = [
-            self.resolver.resolve_run_output(
+        output = []
+        for out_name in mapping.output:
+            resolved = self.resolver.resolve_run_output(
                 archive_outputs[out_name],
                 mapping.mapping_label,
                 selection.parser,
                 file_mapping.file,
+                relative_path=file_mapping.relative_path,
             )
-            for out_name in mapping.output
-        ]
+            output.append(resolved)
+            if self.name_registry is not None:
+                source_key = "\0".join(
+                    (
+                        str(Path(archive).resolve(strict=False)),
+                        file_mapping.relative_path,
+                        file_mapping.archive_file,
+                    )
+                )
+                self.name_registry.register(
+                    resolved,
+                    source_key=source_key,
+                    mapping_label=mapping.mapping_label,
+                    output_name=out_name,
+                    uses_relative_path=(
+                        "$relative_path" in self.configuration.output[out_name].base_file_name
+                    ),
+                )
+        params = self.resolver.resolve_mapping_params(
+            mapping, archive, source_name=source_name
+        )
         run_config = RunConfiguration(
             output,
             mapping.force_nake_case,
-            self.resolver.resolve_mapping_params(mapping, archive),
+            params,
         )
-        metadata = self._build_metadata(archive, file_mapping)
-        return BatchEntry(os.path.abspath(file_mapping.file), run_config, metadata)
+        metadata = (
+            self.metadata_factory(archive, file_mapping)
+            if self.metadata_factory is not None
+            else self._build_metadata(archive, file_mapping)
+        )
+        entry = BatchEntry(os.path.abspath(file_mapping.file), run_config, metadata)
+        if self.name_registry is not None:
+            self._pending_output_refresh.append(
+                (entry, output, mapping.force_nake_case, params)
+            )
+        return entry
+
+    def finalize_output_names(self) -> None:
+        if self.name_registry is None:
+            return
+        self.name_registry.finalize()
+        for entry, output, force_snake_case, params in self._pending_output_refresh:
+            entry.run_config = RunConfiguration(output, force_snake_case, params)
 
     def _build_metadata(self, archive: str, file_mapping: FileMapping) -> Metadata:
         metadata = Metadata(self.outcome.computer_name)
@@ -309,6 +362,72 @@ class ArchivePlanResult:
     last_archive: str
 
 
+class MappingRunPlanner:
+    """Turn selected file mappings from either source into parser entries."""
+
+    def __init__(
+        self,
+        configuration: Configuration,
+        parsers: dict[str, PluginDefinition],
+        resolver: VariableResolver,
+        builder: BatchEntryBuilder,
+        load_parser: Callable[[str], tuple[str, bool]],
+    ):
+        self.configuration = configuration
+        self.parsers = parsers
+        self.resolver = resolver
+        self.builder = builder
+        self.load_parser = load_parser
+
+    def add_source(
+        self,
+        source: str,
+        file_mappings: Sequence[FileMapping],
+        runs: RunConfigGrouper,
+        *,
+        source_name: str | None = None,
+    ) -> None:
+        archive_outputs = {
+            name: self.resolver.resolve_archive_output(
+                output, source, source_name=source_name
+            )
+            for name, output in self.configuration.output.items()
+        }
+        for file_mapping in file_mappings:
+            mapping = file_mapping.mapping
+            plugin_file = self.resolver.resolve_plugin_file(
+                mapping, source, source_name=source_name
+            )
+            parser_name, is_batched = self.load_parser(plugin_file)
+            parser_definition = self.parsers.get(parser_name)
+            if not parser_definition:
+                raise Exception(
+                    f"plugin '{(parser_name, is_batched)}' not found in the loaded plugins"
+                )
+            selection = ParserSelection(
+                plugin_file,
+                parser_name,
+                parser_definition.module,
+                is_batched,
+            )
+            batch_entry = self.builder.build(
+                source,
+                archive_outputs,
+                file_mapping,
+                selection,
+                source_name=source_name,
+            )
+            runs.add(
+                batch_entry,
+                plugin_file,
+                mapping.mapping_label,
+                parser_definition.module,
+                parser_name,
+                is_batched,
+                mapping.timeout,
+            )
+
+
 class ArchiveRunPlanner:
     def __init__(
         self,
@@ -338,14 +457,22 @@ class ArchiveRunPlanner:
         errors: list[str] = []
         grouper = RunConfigGrouper()
         last_archive = ""
-        builder = BatchEntryBuilder(self.configuration, self.outcome, self.resolver)
+        builder = BatchEntryBuilder(
+            self.configuration,
+            self.outcome,
+            self.resolver,
+            name_registry=OutputNameRegistry(),
+        )
+        mapping_planner = MappingRunPlanner(
+            self.configuration,
+            self.parsers,
+            self.resolver,
+            builder,
+            self.load_parser,
+        )
 
         for archive in self.outcome.archives:
             last_archive = archive
-            archive_outputs = {
-                name: self.resolver.resolve_archive_output(output, archive)
-                for name, output in self.configuration.output.items()
-            }
             unpacked = self.unpack(
                 archive,
                 self.password,
@@ -354,37 +481,9 @@ class ArchiveRunPlanner:
                 self.configuration.temp_folder,
             )
             errors.extend(unpacked.errors)
-            for file_mapping in unpacked.valid_mapping:
-                mapping = file_mapping.mapping
-                plugin_file = self.resolver.resolve_plugin_file(mapping, archive)
-                parser_name, is_batched = self.load_parser(plugin_file)
-                parser_definition = self.parsers.get(parser_name)
-                if not parser_definition:
-                    raise Exception(
-                        f"plugin '{(parser_name, is_batched)}' not found in the loaded plugins"
-                    )
-                selection = ParserSelection(
-                    plugin_file,
-                    parser_name,
-                    parser_definition.module,
-                    is_batched,
-                )
-                batch_entry = builder.build(
-                    archive,
-                    archive_outputs,
-                    file_mapping,
-                    selection,
-                )
-                grouper.add(
-                    batch_entry,
-                    plugin_file,
-                    mapping.mapping_label,
-                    parser_definition.module,
-                    parser_name,
-                    is_batched,
-                    mapping.timeout,
-                )
+            mapping_planner.add_source(archive, unpacked.valid_mapping, grouper)
 
+        builder.finalize_output_names()
         return ArchivePlanResult(grouper, errors, last_archive)
 
 
@@ -471,14 +570,16 @@ def load_plugins(plugin_prefixes: list[str]) -> dict[str, PluginDefinition]:
 
 @dataclass
 class PrepareRunResult:
-    archive: str
+    archive: str | None
     runs: RunConfigGrouper
     errors: list[str]
     computer: str
-    orc_id: str
+    orc_id: str | None
     output_folder: str
     report_folder: str
     tmp_folder: str
+    source_folder: str | None = None
+    run_id: str | None = None
 
 
 @dataclass
@@ -543,4 +644,78 @@ def prepare_runs(
         context.configuration.output_folder,
         report_folder,
         context.configuration.temp_folder,
+    )
+
+
+def prepare_folder_runs(
+    conf_file: str,
+    folder: str,
+    computer_name: str | None,
+    global_var: dict[str, str] | None = None,
+    *,
+    started_at: datetime | None = None,
+) -> PrepareRunResult:
+    root = validate_folder_root(folder)
+    effective_computer = root.name if computer_name is None else computer_name
+    if (
+        not effective_computer.strip()
+        or effective_computer in (".", "..")
+        or "/" in effective_computer
+        or "\\" in effective_computer
+        or "\x00" in effective_computer
+    ):
+        raise ValueError("Computer name must be one nonempty path component")
+
+    configuration, parsers = load_config(
+        conf_file, dict(global_var or {}), pattern_scope="archive"
+    )
+    run_date = started_at if started_at is not None else datetime.now(timezone.utc)
+    resolver = VariableResolver(
+        configuration, RunVariables(effective_computer, run_date, None)
+    )
+    report_folder = resolver.resolve_report_folder()
+    exclusions = plan_folder_exclusions(root, configuration, resolver, conf_file)
+    scanned = scan_folder(root, configuration.mapping, exclusions)
+    errors = list(scanned.errors)
+    if not scanned.valid_mapping:
+        errors.append(f"No files matched archive_file_pattern in folder '{root}'")
+
+    def folder_metadata(_source: str, file_mapping: FileMapping) -> Metadata:
+        metadata = Metadata(effective_computer)
+        metadata.folder = root.name
+        metadata.archive_filename = file_mapping.archive_file
+        return metadata
+
+    runs = RunConfigGrouper()
+    builder = BatchEntryBuilder(
+        configuration,
+        resolver.outcome,
+        resolver,
+        metadata_factory=folder_metadata,
+        name_registry=OutputNameRegistry(),
+    )
+    mapping_planner = MappingRunPlanner(
+        configuration,
+        parsers,
+        resolver,
+        builder,
+        load_plugin_parser,
+    )
+    mapping_planner.add_source(
+        str(root), scanned.valid_mapping, runs, source_name=root.name
+    )
+    builder.finalize_output_names()
+    validate_concrete_folder_outputs(root, runs)
+
+    return PrepareRunResult(
+        None,
+        runs,
+        errors,
+        effective_computer,
+        None,
+        configuration.output_folder,
+        report_folder,
+        configuration.temp_folder,
+        str(root),
+        Path(configuration.temp_folder).name,
     )
