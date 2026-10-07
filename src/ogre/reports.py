@@ -30,13 +30,13 @@ class ParserResult:
 
 @dataclass
 class ArchiveReport:
-    """JSON-serialisable report for an ORC processing run."""
+    """JSON-serialisable report for a prepared parsing run."""
 
     timestamp: str
     command_line: str
     ogre_version: str
     computer: str
-    orc_id: str
+    orc_id: str | None
     output_folder: str
     extract_errors: list[str]
     parsing_errors: list[str]
@@ -48,7 +48,7 @@ class ReportBuilder:
     timestamp: str
     command_line: str
     computer: str
-    orc_id: str
+    orc_id: str | None
     output_folder: str
     extract_errors: list[str]
     parsing_errors: list[str]
@@ -60,7 +60,7 @@ class ReportBuilder:
         timestamp: str,
         command_line: str,
         computer: str,
-        orc_id: str,
+        orc_id: str | None,
         output_folder: str,
     ):
         self.timestamp = timestamp

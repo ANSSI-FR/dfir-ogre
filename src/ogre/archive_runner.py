@@ -5,11 +5,12 @@ import multiprocessing
 import os
 import shutil
 import sys
+from typing import Any
 
 from .logging import init_logger
 from .process_runner import run_batch_parser_with_timeout, run_parser_with_timeout
 from .reports import ArchiveReport, DataclassJSONEncoder, ReportBuilder
-from .run_preparation import prepare_runs
+from .run_preparation import PrepareRunResult, prepare_runs
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,18 @@ def parse_archive(
 
     start_date = datetime.datetime.now(datetime.timezone.utc).isoformat()
     prepared_runs = prepare_runs(configuration, archive, password, global_vars)
+    archive_report = execute_prepared_runs(prepared_runs, command_line, start_date)
+    report_name = f"report_{prepared_runs.computer}_{prepared_runs.orc_id}.json"
+    write_report_and_cleanup(archive_report, prepared_runs, report_name)
+    return archive_report
+
+
+def execute_prepared_runs(
+    prepared_runs: PrepareRunResult, command_line: str, timestamp: str
+) -> ArchiveReport:
+    """Run grouped parser entries and aggregate the existing report fields."""
     report_builder = ReportBuilder(
-        start_date,
+        timestamp,
         command_line,
         prepared_runs.computer,
         prepared_runs.orc_id,
@@ -51,6 +62,9 @@ def parse_archive(
     for errors in prepared_runs.errors:
         logger.error(f"{errors}")
         report_builder.add_extract_error(errors)
+
+    if not prepared_runs.runs.map:
+        return report_builder.get_report()
 
     manager = multiprocessing.Manager()
     for run_configuration in prepared_runs.runs.map.values():
@@ -74,10 +88,16 @@ def parse_archive(
                     logger.error(message)
                     report_builder.add_parsing_error(message)
 
-    archive_report = report_builder.get_report()
-    json_str = json.dumps(archive_report, cls=DataclassJSONEncoder)
-    report_name = f"report_{prepared_runs.computer}_{prepared_runs.orc_id}.json"
+    return report_builder.get_report()
 
+
+def write_report_and_cleanup(
+    report: ArchiveReport | dict[str, Any],
+    prepared_runs: PrepareRunResult,
+    report_name: str,
+) -> str:
+    """Write a report and remove only this run's generated temp child."""
+    json_str = json.dumps(report, cls=DataclassJSONEncoder)
     os.makedirs(prepared_runs.report_folder, exist_ok=True)
     report_file = os.path.join(prepared_runs.report_folder, report_name)
     logger.info(f"Writing report: {report_file}")
@@ -86,5 +106,4 @@ def parse_archive(
 
     logger.info(f"Deleting temporary data: {prepared_runs.tmp_folder}")
     shutil.rmtree(prepared_runs.tmp_folder, ignore_errors=True)
-
-    return archive_report
+    return report_file
