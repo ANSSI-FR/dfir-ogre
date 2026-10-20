@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
@@ -157,7 +156,7 @@ class TestFolderPreparation(TempFolderTestCase):
                 entry = next(iter(result.runs.map.values())).batch_entries[0]
                 self.assertEqual(entry.run_config.output[0].base_file_name, "nested/a")
 
-    def test_original_only_mappings_do_not_load_xml_or_unpack_archives(self):
+    def test_original_only_mappings_without_metadata_do_not_load_xml_or_unpack_archives(self):
         from ogre.run_preparation import prepare_folder_runs
 
         root = self._root()
@@ -165,7 +164,7 @@ class TestFolderPreparation(TempFolderTestCase):
             root,
             mappings=[
                 {
-                    "original_file_pattern": "[",
+                    "original_file_pattern": r".*\.txt$",
                     "plugin_file": "missing-original-only.xml",
                     "mapping_label": "original",
                     "output": ["raw"],
@@ -180,6 +179,48 @@ class TestFolderPreparation(TempFolderTestCase):
 
         self.assertEqual(result.runs.map, {})
         self.assertTrue(any("No files matched" in error for error in result.errors))
+
+    def test_folder_original_patterns_are_validated(self):
+        from ogre.run_preparation import prepare_folder_runs
+
+        root = self._root()
+        config_path = self._write_config(root, mappings=[{
+            "original_file_pattern": "[",
+            "plugin_file": "missing.xml",
+            "mapping_label": "original",
+            "output": ["raw"],
+        }])
+        with self.assertRaisesRegex(Exception, "original_file_pattern"):
+            prepare_folder_runs(config_path, str(root), None)
+
+    def test_original_mapping_uses_getthis_metadata_and_reserves_its_output(self):
+        from ogre.run_preparation import prepare_folder_runs
+        from .test_getthis_mapping import write_getthis
+
+        root = self._root()
+        write_getthis(root / "GetThis.csv", [[
+            r"logs\a.txt", r"C:\Windows\Report.wer", "2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z", "snapshot",
+        ]])
+        config_path = self._write_config(root, mappings=[{
+            "original_file_pattern": r".*\\Report\.wer$",
+            "plugin_file": "$plugin_folder/void.xml",
+            "mapping_label": "wer",
+            "output": ["raw"],
+        }])
+        config = yaml.safe_load(Path(config_path).read_text())
+        config["output"]["raw"]["output_folder"] = str(root / "generated" / "$mapping_label")
+        Path(config_path).write_text(yaml.safe_dump(config))
+
+        result = prepare_folder_runs(config_path, str(root), None)
+
+        self.assertEqual(result.errors, [])
+        entry = next(iter(result.runs.map.values())).batch_entries[0]
+        self.assertEqual(entry.file, str(root / "logs" / "a.txt"))
+        self.assertEqual(entry.metadata.original_filename, r"C:\Windows\Report.wer")
+        self.assertEqual(entry.metadata.vss, "snapshot")
+        self.assertEqual(entry.metadata.creation_date, datetime(2026, 1, 1, tzinfo=timezone.utc))
+        self.assertEqual(entry.metadata.modif_date, datetime(2026, 1, 2, tzinfo=timezone.utc))
+        self.assertEqual(entry.run_config.output[0].output_folder, str(root / "generated" / "wer"))
 
     def test_orc_collision_suffix_is_independent_of_extraction_uuid(self):
         mapping = _mapping(output=["rawjson"])

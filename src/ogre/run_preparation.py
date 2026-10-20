@@ -44,6 +44,19 @@ class RunVariables:
     dir_tree: str | None
 
 
+def _set_original_metadata(metadata: Metadata, file_mapping: FileMapping) -> None:
+    metadata.original_filename = file_mapping.original_file
+    metadata.vss = file_mapping.vss
+    if file_mapping.original_creation_date:
+        metadata.creation_date = dateutil.parser.isoparse(
+            file_mapping.original_creation_date
+        ).astimezone(timezone.utc)
+    if file_mapping.original_modification_date:
+        metadata.modif_date = dateutil.parser.isoparse(
+            file_mapping.original_modification_date
+        ).astimezone(timezone.utc)
+
+
 class VariableResolver:
     def __init__(self, configuration: Configuration, outcome: OrcOutcome | RunVariables):
         self.configuration = configuration
@@ -269,18 +282,7 @@ class BatchEntryBuilder:
         metadata.orc_start_date = self.outcome.date
         metadata.orc_id = self.outcome.id
         metadata.archive_filename = file_mapping.archive_file
-        metadata.original_filename = file_mapping.original_file
-        metadata.vss = file_mapping.vss
-
-        if file_mapping.original_creation_date:
-            metadata.creation_date = dateutil.parser.isoparse(
-                file_mapping.original_creation_date
-            ).astimezone(timezone.utc)
-        if file_mapping.original_modification_date:
-            metadata.modif_date = dateutil.parser.isoparse(
-                file_mapping.original_modification_date
-            ).astimezone(timezone.utc)
-
+        _set_original_metadata(metadata, file_mapping)
         return metadata
 
 
@@ -666,9 +668,7 @@ def prepare_folder_runs(
     ):
         raise ValueError("Computer name must be one nonempty path component")
 
-    configuration, parsers = load_config(
-        conf_file, dict(global_var or {}), pattern_scope="archive"
-    )
+    configuration, parsers = load_config(conf_file, dict(global_var or {}))
     run_date = started_at if started_at is not None else datetime.now(timezone.utc)
     resolver = VariableResolver(
         configuration, RunVariables(effective_computer, run_date, None)
@@ -678,12 +678,13 @@ def prepare_folder_runs(
     scanned = scan_folder(root, configuration.mapping, exclusions)
     errors = list(scanned.errors)
     if not scanned.valid_mapping:
-        errors.append(f"No files matched archive_file_pattern in folder '{root}'")
+        errors.append(f"No files matched mapping rules in folder '{root}'")
 
     def folder_metadata(_source: str, file_mapping: FileMapping) -> Metadata:
         metadata = Metadata(effective_computer)
         metadata.folder = root.name
         metadata.archive_filename = file_mapping.archive_file
+        _set_original_metadata(metadata, file_mapping)
         return metadata
 
     runs = RunConfigGrouper()

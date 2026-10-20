@@ -87,9 +87,27 @@ is scanned recursively without following symbolic links. Each
 `archive_file_pattern` is matched, case-insensitively, against a path relative
 to the folder using `/` separators. The regex controls the depth: for example,
 `^logs/.*\.evtx$` selects EVTX files below `logs/`, while `^autoruns\.csv$`
-selects only a root-level file. Folder mode ignores `original_file_pattern`
-rules and their plugin XML; the default `ogre.yaml` may need additional
-archive-name rules for an ordinary artifact folder.
+selects only a root-level file.
+
+For an unpacked ORC export, `folder` also discovers `GetThis.csv` indices
+recursively and applies `original_file_pattern` to their `FullName` values.
+Each `SampleName` is resolved relative to the directory containing its CSV;
+both `/` and `\` separators are accepted. Original filenames, creation and
+modification dates, and snapshot IDs are retained in output metadata,
+including for files selected by `archive_file_pattern`. The source files
+are read in place, without unpacking archives. Without a corresponding
+CSV entry, a file is considered only by `archive_file_pattern`; its physical
+path is not used as an original Windows path.
+
+CSV filenames are matched case-insensitively and UTF-8 BOMs are supported.
+Indices with missing columns, unsafe or unavailable sample paths, or
+overlapping collections are reported as errors; other valid collections
+can still be processed. Symbolic links and excluded output areas are not
+used as sample targets. Repeated identical CSV rows are processed once;
+distinct mapping rules still run independently.
+
+In `orc` mode, `GetThis.csv` is likewise discovered at any depth within each
+nested archive, with sample paths resolved relative to its directory.
 
 Output definitions can use `$relative_path` in `output_folder` and
 `base_file_name` for both `folder` and `orc`:

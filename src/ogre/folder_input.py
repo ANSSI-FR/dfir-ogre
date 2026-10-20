@@ -1,5 +1,6 @@
-"""Select ordinary files from one evidence folder using archive-name mappings."""
+"""Select collected files using member names and GetThis original paths."""
 
+import csv
 import os
 import re
 from pathlib import Path, PurePosixPath
@@ -8,10 +9,14 @@ from typing import TYPE_CHECKING, Sequence
 from .configuration import Configuration, Mapping
 from .logging import configured_log_paths
 from .orc_mapping import (
+    FILE_NAME_MAPPING,
+    WINDOWS_SHORT_FILE_PATTERN,
     FileMapping,
+    OriginalNameMapping,
     UnpackResult,
+    build_original_lookup,
     compile_mapping_pattern,
-    partition_mappings,
+    read_getthis_mappings,
 )
 
 if TYPE_CHECKING:
@@ -107,8 +112,6 @@ def plan_folder_exclusions(
         reserve(log_path, "Log file")
 
     for mapping in configuration.mapping:
-        if not mapping.archive_file_pattern:
-            continue
         for output_name in mapping.output:
             output = resolver.resolve_archive_output(
                 configuration.output[output_name], str(root), source_name=source_name
@@ -148,14 +151,64 @@ def validate_concrete_folder_outputs(
                         )
 
 
+def _folder_originals(
+    root: Path, files: Sequence[Path], errors: list[str]
+) -> dict[str, list[OriginalNameMapping]]:
+    available = {path.relative_to(root).as_posix() for path in files}
+    originals: dict[str, list[OriginalNameMapping]] = {}
+    owners: dict[str, Path] = {}
+    ambiguous: set[str] = set()
+    seen: set[tuple] = set()
+    for index in files:
+        if index.name.casefold() != FILE_NAME_MAPPING.casefold():
+            continue
+        try:
+            loaded = read_getthis_mappings(
+                index, str(index), index.parent.relative_to(root).as_posix()
+            )
+        except (OSError, ValueError, csv.Error) as error:
+            errors.append(f"Cannot read '{index}': {error}")
+            continue
+        errors.extend(loaded.errors)
+        for original in loaded.name_mapping:
+            sample = original.sample_name
+            if sample not in available:
+                errors.append(f"Sample '{sample}' from '{index}' is missing or excluded")
+                continue
+            if sample in ambiguous:
+                continue
+            if sample in owners and owners[sample] != index:
+                errors.append(f"Ambiguous GetThis.csv indices for sample '{sample}'")
+                ambiguous.add(sample)
+                originals.pop(sample, None)
+                continue
+            owners[sample] = index
+            identity = (
+                sample,
+                original.original_name,
+                original.creation_date,
+                original.modification_date,
+                original.vss,
+            )
+            if identity not in seen:
+                seen.add(identity)
+                originals.setdefault(sample, []).append(original)
+    return originals
+
+
 def scan_folder(
     root: Path, mappings: Sequence[Mapping], exclusions: Sequence[Path]
 ) -> UnpackResult:
     """Snapshot regular files without following links, then apply mapping regexes."""
-    archive_mappings, _ = partition_mappings(mappings)
     patterns = [
-        (mapping, compile_mapping_pattern(mapping, "archive_file_pattern"))
-        for mapping in archive_mappings
+        (
+            mapping,
+            compile_mapping_pattern(
+                mapping,
+                "archive_file_pattern" if mapping.archive_file_pattern else "original_file_pattern",
+            ),
+        )
+        for mapping in mappings
     ]
     errors: list[str] = []
     files: list[Path] = []
@@ -188,24 +241,50 @@ def scan_folder(
                 errors.append(f"Cannot inspect '{path}': {error}")
 
     collect(root)
+    files.sort(key=lambda path: path.relative_to(root).as_posix())
+    originals = _folder_originals(root, files, errors)
+    preferred = build_original_lookup(
+        [original for group in originals.values() for original in group]
+    )
     selected: list[FileMapping] = []
-    for source in sorted(files, key=lambda path: path.relative_to(root).as_posix()):
+    for source in files:
         relative = source.relative_to(root).as_posix()
         parent = PurePosixPath(relative).parent.as_posix()
         if parent == ".":
             parent = ""
         for mapping, pattern in patterns:
-            if pattern.match(relative):
+            candidates = (
+                originals.get(relative, [])
+                if mapping.original_file_pattern
+                else [preferred.get(relative)]
+            )
+            for original in candidates:
+                if mapping.original_file_pattern:
+                    if original is None:
+                        continue
+                    if mapping.skip_short_name and WINDOWS_SHORT_FILE_PATTERN.match(
+                        original.original_name
+                    ):
+                        continue
+                    name = original.original_name
+                else:
+                    name = relative
+                if not pattern.match(name):
+                    continue
                 selected.append(
                     FileMapping(
                         file=str(source),
                         archive_name="",
                         archive_file=relative,
-                        original_file=None,
-                        original_creation_date=None,
-                        original_modification_date=None,
+                        original_file=original.original_name if original else None,
+                        original_creation_date=(
+                            original.creation_date if original else None
+                        ),
+                        original_modification_date=(
+                            original.modification_date if original else None
+                        ),
                         mapping=mapping,
-                        vss=None,
+                        vss=original.vss if original else None,
                         error=None,
                         relative_path=parent,
                     )

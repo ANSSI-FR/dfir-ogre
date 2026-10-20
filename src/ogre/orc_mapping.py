@@ -1,6 +1,7 @@
+import csv
 import re
 from dataclasses import dataclass
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Collection, Optional
 
 from .configuration import Mapping
@@ -52,6 +53,49 @@ class NestedArchive:
 class OriginalFileMappingResult:
     name_mapping: list[OriginalNameMapping]
     errors: list[str]
+
+
+def read_getthis_mappings(
+    csv_file: str | Path, archive: str, sample_parent: str = ""
+) -> OriginalFileMappingResult:
+    """Read original names, resolving samples relative to their collection CSV."""
+    result = OriginalFileMappingResult([], [])
+    required = {"SampleName", "FullName", "CreationDate", "LastModificationDate", "SnapshotID"}
+    with open(csv_file, encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        missing = required - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(f"Missing columns in '{csv_file}': {', '.join(sorted(missing))}")
+        for row_number, row in enumerate(reader, start=2):
+            sample = row["SampleName"]
+            if not sample:
+                continue
+            relative = PurePosixPath(sample.replace("\\", "/"))
+            if (
+                "\x00" in sample
+                or relative.is_absolute()
+                or PureWindowsPath(sample).drive
+                or not relative.parts
+                or ".." in relative.parts
+            ):
+                result.errors.append(
+                    f"Unsafe SampleName '{sample}' in '{csv_file}', row {row_number}"
+                )
+                continue
+            if any(row[column] is None for column in required):
+                result.errors.append(f"Incomplete row {row_number} in '{csv_file}'")
+                continue
+            result.name_mapping.append(
+                OriginalNameMapping(
+                    archive,
+                    (PurePosixPath(sample_parent) / relative).as_posix(),
+                    row["FullName"],
+                    row["CreationDate"] or None,
+                    row["LastModificationDate"] or None,
+                    row["SnapshotID"],
+                )
+            )
+    return result
 
 
 def source_relative_parent(

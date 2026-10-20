@@ -126,6 +126,40 @@ class TestFolderRunner(TempFolderTestCase):
         self.assertEqual(report["summary"], [])
         self.assertEqual(report["run_results"], [])
 
+    def test_getthis_original_mapping_runs_parser_and_preserves_provenance(self):
+        from .test_getthis_mapping import write_getthis
+
+        root = self._root()
+        config_path = self._config(root)
+        config = yaml.safe_load(Path(config_path).read_text())
+        mapping = config["mapping"][0]
+        mapping.pop("archive_file_pattern")
+        mapping["original_file_pattern"] = r".*\\Report\.wer$"
+        Path(config_path).write_text(yaml.safe_dump(config))
+        write_getthis(root / "GetThis.csv", [[
+            r"logs\a.txt", r"C:\Windows\Report.wer", "2026-01-01T00:00:00Z", "", "snapshot",
+        ]])
+        source = root / "logs" / "a.txt"
+        original = source.read_bytes()
+
+        with mock.patch(
+            "ogre.run_preparation.ArchiveRunPlanner.plan",
+            side_effect=AssertionError("7z planner called"),
+        ):
+            with mock.patch("sys.argv", self._argv(root, config_path)):
+                cli.main()
+
+        output_path = root.parent / "out" / "host.v2" / "logs" / "logs_a.test.jsonl"
+        parsed = json.loads(output_path.read_text())
+        _, report = self._report(root)
+        self.assertEqual(parsed["line"], "Evidence line")
+        self.assertEqual(parsed["ogre_md"]["original_filename"], r"C:\Windows\Report.wer")
+        self.assertEqual(parsed["ogre_md"]["vss"], "snapshot")
+        self.assertEqual(report["run_results"][0]["metadata"]["original_filename"], r"C:\Windows\Report.wer")
+        self.assertEqual(report["extract_errors"], [])
+        self.assertEqual(report["parsing_errors"], [])
+        self.assertEqual(source.read_bytes(), original)
+
     def test_child_scan_error_is_reported_after_readable_file_runs(self):
         root = self._root()
         config = self._config(root)

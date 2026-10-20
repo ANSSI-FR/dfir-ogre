@@ -1,4 +1,3 @@
-import csv
 import logging
 import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -20,6 +19,7 @@ from .orc_mapping import (
     build_original_lookup,
     compile_mapping_pattern,
     partition_mappings,
+    read_getthis_mappings,
     source_relative_parent,
 )
 from .sevenzip_rename_factory import (
@@ -240,11 +240,8 @@ def _build_file_mapping(
     temp_folder: str,
 ) -> OriginalFileMappingResult:
     """
-    Search sub-archives for 'GetThis.csv' and build original file name mappings.
-    Processes each sub-archive by:
-    1. Checking for 'GetThis.csv' file
-    2. Extracting the CSV file to temp folder
-    3. Parsing the CSV to build name mappings
+    Read collection CSVs at any depth in each sub-archive.
+    SampleName paths are relative to the directory containing GetThis.csv.
 
     Args:
         main_archive: Main archive path
@@ -265,12 +262,23 @@ def _build_file_mapping(
             with py7zr.SevenZipFile(archive, password=password) as file7z:
                 file_list = file7z.getnames()
                 for file in file_list:
-                    if file == FILE_NAME_MAPPING:
+                    normalized = PurePosixPath(file.replace("\\", "/"))
+                    if normalized.name.casefold() != FILE_NAME_MAPPING.casefold():
+                        continue
+                    try:
                         inner_folder = os.path.join(temp_folder, archive_name)
-
+                        get_this_file = _safe_archive_member_path(file, inner_folder)
+                        file7z.reset()
                         file7z.extract(inner_folder, [file])
-                        get_this_file = os.path.join(inner_folder, file)
-                        _build_file_mapping_list(get_this_file, archive, mapping)
+                        loaded = read_getthis_mappings(
+                            get_this_file, archive, normalized.parent.as_posix()
+                        )
+                        mapping.extend(loaded.name_mapping)
+                        errors.extend(loaded.errors)
+                    except Exception as error:
+                        errors.append(
+                            f"Cannot read '{file}' in archive '{archive}': {error}"
+                        )
 
         except Exception as e:
             errors.append(
@@ -278,35 +286,6 @@ def _build_file_mapping(
             )
 
     return OriginalFileMappingResult(mapping, errors)
-
-
-def _build_file_mapping_list(
-    get_this_file: str, archive: str, file_mapping: List[OriginalNameMapping]
-):
-    """
-    Parse 'GetThis.csv' file and populate original name mappings.
-
-    Args:
-        get_this_file: Path to 'GetThis.csv' file
-        archive: Name of the archive containing the CSV
-        file_mapping: List to append OriginalNameMapping entries to
-
-    """
-    with open(get_this_file, "r") as data:
-        for line in csv.DictReader(data):
-            sample_name = line["SampleName"]
-            if sample_name:
-                sample_name = sample_name.replace("\\", "/")
-                file_mapping.append(
-                    OriginalNameMapping(
-                        archive,
-                        sample_name,
-                        line["FullName"],
-                        line["CreationDate"],
-                        line["LastModificationDate"],
-                        line["SnapshotID"],
-                    )
-                )
 
 
 def _match_original_files(
@@ -539,10 +518,11 @@ def _match_archive_files(
                     f"An error occured while extracting files from archive:'{archive}', error: {e} "
                 )
 
-    file_dict = build_original_lookup(original_files)
-
     # match pattern from sub archives
     for sub_archive in sub_archives:
+        file_dict = build_original_lookup(
+            [original for original in original_files if original.archive == sub_archive]
+        )
         try:
             _match_inner_archive_files(
                 archive,
