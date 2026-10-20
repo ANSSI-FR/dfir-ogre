@@ -35,14 +35,14 @@ mapping:
       - timeline
 
   # Autoruns
-  - archive_file_pattern: 'autoruns\.csv$'
+  - archive_file_pattern: '(.*/)?autoruns\.csv$'
     plugin_file: $plugin_folder/autoruns.xml
     mapping_label: autoruns
     output:
       - timeline
 
   # Chrome download history
-  - original_file_pattern: '.*\\Default\\History$'
+  - original_file_pattern: '.*\\(?:Default|Profile [0-9]+|Guest Profile|Opera[^\\]*)\\History$'
     plugin_file: $plugin_folder/chrome_download_history.xml
     mapping_label: browser_download_history
     output:
@@ -56,7 +56,7 @@ mapping:
       - timeline
 
   # Chrome browsing history
-  - original_file_pattern: '.*\\Default\\History$'
+  - original_file_pattern: '.*\\(?:Default|Profile [0-9]+|Guest Profile|Opera[^\\]*)\\History$'
     plugin_file: $plugin_folder/chrome_history.xml
     mapping_label: browser_history
     output:
@@ -133,7 +133,7 @@ mapping:
       - timeline
 
   # Java webstart Idx cache file
-  - original_file_pattern: '.*java\\.*\\.*cache\\.*\\cache.idx$'
+  - original_file_pattern: '.*\\Java\\Deployment\\cache\\.*\.idx$'
     plugin_file: $plugin_folder/java_idx.xml
     mapping_label: java_idx
     output:
@@ -154,42 +154,42 @@ mapping:
       - timeline
 
   # Object Info - since Ogre version 0.4.1
-  - archive_file_pattern: "GetObjInfo.csv$"
+  - archive_file_pattern: '(.*/)?(Get)?ObjInfo\.csv$'
     plugin_file: $plugin_folder/object_info.xml
     mapping_label: objinfo
     output:
       - timeline
 
   # NTFSInfo
-  - archive_file_pattern: 'NTFSInfo.*\.csv$'
+  - archive_file_pattern: '(.*/)?NTFSInfo[^/]*\.csv$'
     plugin_file: $plugin_folder/ntfs_info.xml
     mapping_label: ntfsinfo
     output:
       - timeline
 
   # Parse processes from the orc file: processes1.csv
-  - archive_file_pattern: '.*processes1\.csv$'
+  - archive_file_pattern: '(.*/)?(processes1|wmi_win32_process)\.csv$'
     plugin_file: $plugin_folder/orc_processes_1.xml
     mapping_label: processes_orc
     output:
       - timeline
 
   # Parse processes from the orc file: processes2.csv
-  - archive_file_pattern: '.*processes2\.csv$'
+  - archive_file_pattern: '(.*/)?(processes2|get_process)\.csv$'
     plugin_file: $plugin_folder/orc_processes_2.xml
     mapping_label: processes_orc
     output:
       - timeline
 
   # Pca App Launch record
-  - archive_file_pattern: '.*\\PcaAppLaunch.*\.txt$'
+  - original_file_pattern: '.*\\PcaAppLaunch[^\\]*\.txt$'
     plugin_file: $plugin_folder/pca_app_launch.xml
     mapping_label: pca_app_launch
     output:
       - timeline
 
   # Pca General record
-  - archive_file_pattern: '.*\\PcaGeneral.*\.txt$'
+  - original_file_pattern: '.*\\PcaGeneral[^\\]*\.txt$'
     plugin_file: $plugin_folder/pca_general_record.xml
     mapping_label: pca_general_record
     output:
@@ -203,7 +203,7 @@ mapping:
       - timeline
 
   # Recycle Bin
-  - original_file_pattern: '\\\$Recycle.Bin\\*.$'
+  - original_file_pattern: '.*\\\$Recycle\.Bin\\[^\\]+\\\$I[^\\]*$'
     plugin_file: $plugin_folder/recycle_bin.xml
     mapping_label: recycle_bin
     output:
@@ -217,21 +217,21 @@ mapping:
       - timeline
 
   # System Info - since Ogre version 0.4.1
-  - archive_file_pattern: "Systeminfo.csv$"
+  - archive_file_pattern: '(.*/)?systeminfo\.csv$'
     plugin_file: $plugin_folder/system_info.xml
     mapping_label: systeminfo
     output:
       - timeline
 
   # USNInfo
-  - archive_file_pattern: 'USNInfo.*\.csv$'
+  - archive_file_pattern: '(.*/)?USNInfo[^/]*\.csv$'
     plugin_file: $plugin_folder/usn_info.xml
     mapping_label: usninfo
     output:
       - timeline
 
   # WER reports
-  - archive_file_pattern: '.*WER/.*Report\.wer.*$'
+  - original_file_pattern: '.*\\Report\.wer$'
     plugin_file: $plugin_folder/wer.xml
     mapping_label: wer
     output:
@@ -457,7 +457,7 @@ mapping:
   #####
   ### User Hive
   #####
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/hive.xml
     mapping_label: reg_keys
     root_name: \\HKU
@@ -465,56 +465,56 @@ mapping:
       - timeline
 
   # Registry key for most recent search history from Windows search (windows < 7) - no test data
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/acmru.xml
     mapping_label: acmru
     output:
       - timeline
 
   # IE antiphishing values - no test data
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/antifishing_file.xml
     mapping_label: antifishing_file
     output:
       - timeline
 
   # Autoruns Persistence mechanisms from the User Registry - since Ogre version 0.4.1
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/autoruns_user.xml
     mapping_label: reg_autoruns
     output:
       - timeline
 
   # X509 certificates
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/certificates_users.xml
     mapping_label: x509_cert
     output:
       - timeline
 
   # Extracts Windows 7 and later Explorer search history from WordWheelQuery
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/explorer_search_history.xml
     mapping_label: explorer_search_history
     output:
       - timeline
 
   # informations about applications and files accessed (windows >=10)
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/recent_app.xml
     mapping_label: recent_app
     output:
       - timeline
 
   # most recent 'Run' (WINDOWS+R) commands
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/run_mru.xml
     mapping_label: run_mru
     output:
       - timeline
 
   # UserAssist entries
-  - original_file_pattern: '.*\\NTUSER\.DAT$'
+  - original_file_pattern: '.*\\NTUSER\.(?:DAT|MAN)$'
     plugin_file: $plugin_folder/registry/user_assist.xml
     mapping_label: user_assist
     output:
