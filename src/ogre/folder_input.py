@@ -129,19 +129,23 @@ def validate_concrete_folder_outputs(
     runs: "RunConfigGrouper",
     exclusions: Sequence[Path] | None = None,
 ) -> None:
-    """Reject mapped output folders that could overwrite the source root."""
+    """Keep mapped output folders and basenames inside validated write areas."""
     for run in runs.map.values():
         for entry in run.batch_entries:
             for output in entry.run_config.output:
-                inside = _classify_destination(
-                    root, Path(output.output_folder), "Mapped output folder"
-                )
-                if inside is not None and exclusions is not None and not any(
-                    inside == area or area in inside.parents for area in exclusions
-                ):
-                    raise ValueError(
-                        f"Mapped output folder '{output.output_folder}' was not excluded before scanning"
+                folder = Path(output.output_folder)
+                # Writers append data-type/format suffixes before joining the basename.
+                file_parent = (folder / f"{output.base_file_name}.output").parent
+                for destination in (folder, file_parent):
+                    inside = _classify_destination(
+                        root, destination, "Mapped output folder"
                     )
+                    if inside is not None and exclusions is not None and not any(
+                        inside == area or area in inside.parents for area in exclusions
+                    ):
+                        raise ValueError(
+                            f"Mapped output folder '{destination}' was not excluded before scanning"
+                        )
 
 
 def scan_folder(

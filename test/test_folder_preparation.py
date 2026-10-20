@@ -119,6 +119,44 @@ class TestFolderPreparation(TempFolderTestCase):
             entries[1].run_config.output[0].base_file_name,
         )
 
+    def test_output_basename_cannot_redirect_writes_into_source_files(self):
+        from ogre.run_preparation import prepare_folder_runs
+
+        root = self._root()
+        config_path = self._write_config(root)
+        config = yaml.safe_load(Path(config_path).read_text())
+        for output_folder, basename in (
+            (root.parent / "out", "../host.v2/logs/a"),
+            (root.parent / "out", str(root / "logs" / "a")),
+            (root / "generated", "../logs/a"),
+        ):
+            with self.subTest(output_folder=output_folder, basename=basename):
+                config["output"]["raw"]["output_folder"] = str(output_folder)
+                config["output"]["raw"]["base_file_name"] = basename
+                Path(config_path).write_text(yaml.safe_dump(config))
+
+                with self.assertRaises(ValueError):
+                    prepare_folder_runs(config_path, str(root), None)
+
+        self.assertEqual((root / "logs" / "a.txt").read_text(), "evidence")
+
+    def test_output_basename_keeps_safe_nested_destinations(self):
+        from ogre.run_preparation import prepare_folder_runs
+
+        root = self._root()
+        config_path = self._write_config(root)
+        config = yaml.safe_load(Path(config_path).read_text())
+        for output_folder in (root.parent / "out", root / "generated"):
+            with self.subTest(output_folder=output_folder):
+                config["output"]["raw"]["output_folder"] = str(output_folder)
+                config["output"]["raw"]["base_file_name"] = "nested/a"
+                Path(config_path).write_text(yaml.safe_dump(config))
+
+                result = prepare_folder_runs(config_path, str(root), None)
+
+                entry = next(iter(result.runs.map.values())).batch_entries[0]
+                self.assertEqual(entry.run_config.output[0].base_file_name, "nested/a")
+
     def test_original_only_mappings_do_not_load_xml_or_unpack_archives(self):
         from ogre.run_preparation import prepare_folder_runs
 
