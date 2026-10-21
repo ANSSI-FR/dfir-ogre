@@ -164,8 +164,10 @@ class TestCliHardening(TempFolderTestCase):
 
         with mock.patch("ogre.plugin_runner.multiprocessing.Process", HangingProcess):
             with self.assertLogs("ogre.plugin_runner", level="ERROR") as logs:
-                plugin_runner.run_plugin(args)
+                with self.assertRaises(SystemExit) as error:
+                    plugin_runner.run_plugin(args)
 
+        self.assertEqual(error.exception.code, 1)
         self.assertIn("parsing timed out", "\n".join(logs.output))
         self.assertEqual(instances[0].join_calls, [5, 1, 1])
         self.assertTrue(instances[0].terminated)

@@ -25,6 +25,7 @@ def run_plugin(args):
     init_logger()
 
     timeout = getattr(args, "timeout", PLUGIN_DEFAULT_TIMEOUT)
+    failed = False
     process = multiprocessing.Process(target=_run_plugin_child, args=(args,))
     process.start()
     try:
@@ -32,13 +33,18 @@ def run_plugin(args):
         if process.is_alive():
             _terminate_process(process)
             logger.error(f"parsing timed out, could not finish in {timeout} seconds")
+            failed = True
         else:
             if process.exitcode not in (0, None):
-                logger.error(f"The parsing process crashed with exit code {process.exitcode}")
+                logger.error(f"The parsing process failed with exit code {process.exitcode}")
+                failed = True
             _close_process(process)
     except KeyboardInterrupt:
         _terminate_process(process)
         raise
+
+    if failed:
+        raise SystemExit(1)
 
 
 def _terminate_process(process):
@@ -68,7 +74,8 @@ def _join_while_stopping(process):
 
 def _run_plugin_child(args):
     try:
-        _run_plugin_direct(args)
+        if not _run_plugin_direct(args):
+            raise SystemExit(1)
     except Exception as error:
         logger.error(f"A critical error occurred while running plugin: {error}")
         raise
@@ -117,6 +124,7 @@ def _run_plugin_direct(args):
     metadata.archive_filename = args.filename
 
     found = False
+    succeeded = True
     if is_batch:
         for parser in OgreBatchedPlugin.__subclasses__():
             parser_obj = parser()
@@ -127,15 +135,14 @@ def _run_plugin_direct(args):
                     logger.info(f"Running '{plugin}', on file '{args.filename}' ")
 
                     result = parser_obj.parse(
-                        [BatchEntry(args.filename, runconfig, Metadata("test"))],
+                        [BatchEntry(args.filename, runconfig, metadata)],
                         plugin_file,
                     )
 
-                    if result.last_error:
-                        logger.error(
-                            f"file: '{args.filename}' with parser: '{plugin}' error: {result.last_error}"
-                        )
+                    if not _report_succeeded(result, args.filename, plugin):
+                        succeeded = False
                 except Exception as error:
+                    succeeded = False
                     logger.error(
                         f"file: '{args.filename}' with parser: '{plugin}' error: {error}"
                     )
@@ -155,17 +162,28 @@ def _run_plugin_direct(args):
                         metadata,
                     )
 
-                    if result.last_error:
-                        logger.error(
-                            f"file: '{args.filename}' with parser: '{plugin}' error: {result.last_error}"
-                        )
+                    if not _report_succeeded(result, args.filename, plugin):
+                        succeeded = False
                 except Exception as error:
+                    succeeded = False
                     logger.error(
                         f"file: '{args.filename}' with parser: '{plugin}' error: {error}"
                     )
 
     if not found:
         logger.error(f"Unknown plugin '{plugin}'")
+
+    return found and succeeded
+
+
+def _report_succeeded(result, filename, plugin):
+    succeeded = True
+    for report in (result, *(result.output_reports or [])):
+        if report.last_error or report.num_errors:
+            succeeded = False
+            error = report.last_error or f"{report.num_errors} error(s) reported"
+            logger.error(f"file: '{filename}' with parser: '{plugin}' error: {error}")
+    return succeeded
 
 
 def parse_params(params) -> dict[str, str | None]:
