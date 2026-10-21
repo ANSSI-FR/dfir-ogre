@@ -69,6 +69,43 @@ dfir-ogre orc \
     --configuration dfir-ogre/configuration/ogre.yaml
 ```
 
+### Run a single plugin
+
+```bash
+dfir-ogre plugin \
+    --filename SRUDB.dat \
+    --plugin_config ../dfir-ogre-plugin-windows/configuration/srum.xml \
+    --computer_name HOST01 \
+    --output_folder ./output \
+    --output_type gzip \
+    --compression_level 5 \
+    --output_name '$computer_name-$parser-$file_name-$timestamp' \
+    --dry_run
+```
+
+`--dry_run` validates output settings and prints a JSON plan without parsing the
+artifact or creating output files. Remove that flag to parse. The plan lists
+possible outputs from every XML mapping; missing SRUM providers, for example,
+may leave some of those files unwritten.
+
+Output types are `file` (default) and `gzip`. Formats are `jsonl` (default), `csv`,
+`normalized_jsonl`, `normalized_csv`, and `analytics_jsonl`. The filename template
+defaults to `$file_name`, the input filename without its final extension; it also
+accepts `$computer_name`, `$parser`, and `$timestamp` (one UTC timestamp in
+`YYYYMMDD_HHMMSS` form). Braced placeholders such as `${file_name}` work too.
+Quote templates to prevent shell expansion. OGRE adds the data type and extension,
+for example `HOST01-Srum-SRUDB-20261021_120000.srum_application_resources.jsonl.gz`.
+Use `--output_folder` for directories; names cannot contain path separators.
+
+Existing output files cause an error before parsing, including normalized
+metadata and timeline companion files. The plugin command does not append to or
+overwrite existing files. Use another directory or base name for a new run;
+normalized metadata filenames are fixed, so those collisions need another directory.
+
+`--output_date_format` accepts `iso` (default), `iso_utc`, `utc_naive`, or a custom
+chrono strftime pattern. `--timeline_include_undated` retains entries with no
+date; it requires `--timeline` and is incompatible with `analytics_jsonl`.
+
 ### Parse a folder of artifacts
 
 Use `folder` for ordinary files collected from one computer, without a DFIR-ORC

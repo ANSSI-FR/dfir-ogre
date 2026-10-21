@@ -18,6 +18,7 @@ from .commands import list_parsers
 from .folder_runner import handle_folder as _handle_folder
 from .logging import init_logger
 from .plugin_runner import run_plugin as _run_plugin
+from .plugin_output import OUTPUT_FORMATS
 from .timeline import build_timeline
 from .void_parser import VoidParser as VoidParser
 
@@ -96,15 +97,38 @@ def main() -> None:
     _ = run.add_argument("--computer_name", required=True, help="Identifier of the machine where the input file comes from. This value is stored in the output metadata.")
     _ = run.add_argument("--output_folder", required=True, help="Destination directory where output will be written.")
     _ = run.add_argument(
-        "--output_format", help="the output format: jsonl, csv, normalized_jsonl, normalized_csv"
+        "--output_format", choices=OUTPUT_FORMATS, help="Output format (default: jsonl)."
     )
     _ = run.add_argument(
-        "--output_date_format", help="the output format: jsonl, csv, normalized_jsonl, normalized_csv"
+        "--output_type", choices=("file", "gzip"), default="file",
+        help="Output file type (default: file). Existing output files cause an error.",
+    )
+    _ = run.add_argument(
+        "--compression_level", type=int, choices=range(10),
+        help="Gzip compression level, 0–9 (default: 5); requires --output_type gzip.",
+    )
+    _ = run.add_argument(
+        "--output_name", default="$file_name",
+        help=("Base filename template: $file_name, $computer_name, $parser, "
+              "$timestamp (UTC). Quote templates in your shell. "
+              "Data type and extension are appended automatically."),
+    )
+    _ = run.add_argument(
+        "--output_date_format", help="Date format: iso (default), iso_utc, utc_naive, or a chrono strftime pattern."
     )
     _ = run.add_argument(
         "--params", help="a json key value pair object that defines additional parameters that can be required by a plugin. Example: --params '{\"test\":1}'"
     )
     _ = run.add_argument("--timeline", action="store_true", help="When ``True`` add timeline informations to the output.")
+    _ = run.add_argument(
+        "--timeline_include_undated", action="store_true",
+        help=("Include undated timeline entries; requires --timeline "
+              "and is incompatible with analytics_jsonl."),
+    )
+    _ = run.add_argument(
+        "--dry_run", action="store_true",
+        help="Validate output settings and print a JSON plan without parsing or creating output files.",
+    )
     _ = run.add_argument(
         "--include_empty", action="store_true", help="When ``True`` empty fields are retained in the output."
     )
