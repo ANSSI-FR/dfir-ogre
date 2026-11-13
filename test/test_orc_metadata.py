@@ -136,6 +136,36 @@ class TestOrcMetadata(TempFolderTestCase):
             str(context.exception),
         )
 
+    def test_json_archive_definition_accepts_iso8601_timestamp(self):
+        archive_definition = """{
+            "id": "B96BCC93563370E7FD4D29E454FDC554C2FFEB37",
+            "hostname": "NIC0P-PC89.mfa.lan",
+            "timestamp": "2025-09-17T05:49:12+00:00",
+            "dir_tree": "mfa_202509",
+            "unencrypted_data_files": ["test/data/archive/SampleOrc.7z"]
+        }"""
+
+        orc_outcome = load_archive_metadata(archive_definition)
+
+        self.assertEqual(
+            orc_outcome.date.isoformat(), "2025-09-17T05:49:12+00:00"
+        )
+
+    def test_json_archive_definition_accepts_legacy_compact_timestamp(self):
+        archive_definition = """{
+            "id": "B96BCC93563370E7FD4D29E454FDC554C2FFEB37",
+            "hostname": "NIC0P-PC89.mfa.lan",
+            "timestamp": "20250904_221144",
+            "dir_tree": "mfa_202509",
+            "unencrypted_data_files": ["test/data/archive/SampleOrc.7z"]
+        }"""
+
+        orc_outcome = load_archive_metadata(archive_definition)
+
+        self.assertEqual(
+            orc_outcome.date.isoformat(), "2025-09-04T22:11:44+00:00"
+        )
+
     def test_outcome_file_requires_command_set_list(self):
         outcome_file = os.path.join(self.temp_folder, "bad_outcome.json")
         with open(outcome_file, "w") as file:

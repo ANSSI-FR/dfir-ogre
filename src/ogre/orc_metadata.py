@@ -84,7 +84,7 @@ def _load_json_definition(archive_path: str) -> OrcOutcome:
     if not timestamp:
         raise Exception("No timestamp  defined in the json archive definition")
 
-    date = datetime.strptime(timestamp, "%Y%m%d_%H%M%S").replace(tzinfo=timezone.utc)
+    date = dateutil.parser.isoparse(timestamp).replace(tzinfo=timezone.utc)
     dir_tree = json_data.get("dir_tree", None)
 
     return OrcOutcome(id, str(computer_name), date, dir_tree, archives)
