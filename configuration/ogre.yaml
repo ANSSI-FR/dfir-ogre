@@ -235,6 +235,15 @@ mapping:
       - timeline
       - raw_data
 
+  # Raw $MFT collected by GetThis (standalone files can use plugin mft.xml)
+  - original_file_pattern: '.*\\\$MFT$'
+    plugin_file: $plugin_folder/mft.xml
+    mapping_label: mft
+    timeout: 3600
+    output:
+      - timeline
+      - raw_data
+
   # Parse processes from the orc file: processes1.csv
   - archive_file_pattern: '(.*/)?(processes1|wmi_win32_process)\.csv$'
     plugin_file: $plugin_folder/orc_processes_1.xml
