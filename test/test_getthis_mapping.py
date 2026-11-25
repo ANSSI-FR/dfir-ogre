@@ -5,6 +5,7 @@ import py7zr
 
 from ogre.configuration import Mapping
 from ogre.folder_input import scan_folder
+from ogre.orc_mapping import read_getthis_mappings
 from ogre.orc_unpacker import unpack_dfir_orc
 
 from .hardening_helpers import TempFolderTestCase
@@ -26,6 +27,28 @@ def original_mapping(pattern=r".*\.wer$", *, skip_short_name=True):
 
 def archive_mapping():
     return Mapping(r".*\.data$", None, "unused.xml", "archive", True, False, 10, {}, [])
+
+
+class TestGetThisIndex(TempFolderTestCase):
+    def test_empty_index_reports_unavailable_original_metadata(self):
+        index = Path(self.temp_folder) / "GetThis.csv"
+        for content in (b"", b"\xef\xbb\xbf"):
+            with self.subTest(content=content):
+                index.write_bytes(content)
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"^Empty GetThis index: original file metadata is unavailable\.$",
+                ):
+                    read_getthis_mappings(index, "collection.7z")
+
+    def test_valid_header_without_rows_is_accepted(self):
+        index = Path(self.temp_folder) / "GetThis.csv"
+        write_getthis(index, [], bom=True)
+
+        result = read_getthis_mappings(index, "collection.7z")
+
+        self.assertEqual(result.name_mapping, [])
+        self.assertEqual(result.errors, [])
 
 
 class TestGetThisArchiveMapping(TempFolderTestCase):
@@ -149,6 +172,7 @@ class TestGetThisFolderMapping(TempFolderTestCase):
 
         self.assertEqual(len(result.valid_mapping), 1)
         self.assertTrue(any("GetThis.csv" in error for error in result.errors), result.errors)
+        self.assertTrue(any("Missing columns" in error for error in result.errors), result.errors)
 
     def test_missing_unsafe_symlinked_and_excluded_samples_are_never_selected(self):
         root = self._root()

@@ -63,7 +63,11 @@ def read_getthis_mappings(
     required = {"SampleName", "FullName", "CreationDate", "LastModificationDate", "SnapshotID"}
     with open(csv_file, encoding="utf-8-sig", newline="") as stream:
         reader = csv.DictReader(stream)
-        missing = required - set(reader.fieldnames or [])
+        if reader.fieldnames is None:
+            raise ValueError(
+                "Empty GetThis index: original file metadata is unavailable."
+            )
+        missing = required - set(reader.fieldnames)
         if missing:
             raise ValueError(f"Missing columns in '{csv_file}': {', '.join(sorted(missing))}")
         for row_number, row in enumerate(reader, start=2):
