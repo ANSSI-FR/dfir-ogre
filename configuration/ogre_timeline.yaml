@@ -174,13 +174,6 @@ mapping:
     output:
       - timeline
 
-  # Parse processes from the orc file: processes2.csv
-  - archive_file_pattern: '(.*/)?(processes2|get_process)\.csv$'
-    plugin_file: $plugin_folder/orc_processes_2.xml
-    mapping_label: processes_orc
-    output:
-      - timeline
-
   # Pca App Launch record
   - original_file_pattern: '.*\\PcaAppLaunch[^\\]*\.txt$'
     plugin_file: $plugin_folder/pca_app_launch.xml

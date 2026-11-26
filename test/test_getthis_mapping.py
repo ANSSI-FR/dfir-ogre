@@ -11,13 +11,14 @@ from ogre.orc_unpacker import unpack_dfir_orc
 from .hardening_helpers import TempFolderTestCase
 
 
-def write_getthis(path, rows, *, bom=False):
+def write_getthis(path, rows, *, bom=False, content_metadata=False):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8-sig" if bom else "utf-8", newline="") as stream:
         writer = csv.writer(stream)
-        writer.writerow(
-            ["SampleName", "FullName", "CreationDate", "LastModificationDate", "SnapshotID"]
-        )
+        columns = ["SampleName", "FullName", "CreationDate", "LastModificationDate", "SnapshotID"]
+        if content_metadata:
+            columns.extend(["AttrType", "SizeInBytes"])
+        writer.writerow(columns)
         writer.writerows(rows)
 
 
@@ -52,6 +53,65 @@ class TestGetThisIndex(TempFolderTestCase):
 
 
 class TestGetThisArchiveMapping(TempFolderTestCase):
+    def _same_named_archives(self):
+        root = Path(self.temp_folder)
+        archives = []
+        for label in ("first", "second"):
+            folder = root / label
+            folder.mkdir()
+            sample = folder / "sample.data"
+            sample.write_bytes(label.encode())
+            index = folder / "GetThis.csv"
+            write_getthis(index, [["sample.data", rf"C:\{label}\Report.wer", "", "", label]])
+            inner = folder / "collection.7z"
+            with py7zr.SevenZipFile(inner, "w") as archive:
+                archive.write(index, "GetThis.csv")
+                archive.write(sample, "sample.data")
+            archives.append((label, inner))
+        main = root / "main.7z"
+        with py7zr.SevenZipFile(main, "w") as archive:
+            for label, inner in archives:
+                archive.write(inner, f"{label}/collection.7z")
+            # Main-archive files must not overwrite nested-archive staging data.
+            outer = root / "outer.data"
+            outer.write_bytes(b"outer")
+            archive.write(outer, ".contents/first/collection.7z/sample.data")
+        return main
+
+    def test_same_named_archives_keep_original_content_and_metadata_separate(self):
+        main = self._same_named_archives()
+
+        result = unpack_dfir_orc(
+            str(main), None, None, [original_mapping()], str(Path(self.temp_folder) / "unpack")
+        )
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual(len(result.valid_mapping), 2)
+        self.assertEqual(len({entry.file for entry in result.valid_mapping}), 2)
+        for entry in result.valid_mapping:
+            label = entry.relative_path.split("/")[0]
+            self.assertEqual(Path(entry.file).read_bytes(), label.encode())
+            self.assertEqual(entry.original_file, rf"C:\{label}\Report.wer")
+            self.assertEqual(entry.vss, label)
+
+    def test_archive_patterns_keep_main_and_nested_content_separate(self):
+        main = self._same_named_archives()
+
+        result = unpack_dfir_orc(
+            str(main), None, None, [archive_mapping()], str(Path(self.temp_folder) / "unpack")
+        )
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual(len(result.valid_mapping), 3)
+        self.assertEqual(len({entry.file for entry in result.valid_mapping}), 3)
+        self.assertEqual(
+            {Path(entry.file).read_bytes() for entry in result.valid_mapping},
+            {b"first", b"second", b"outer"},
+        )
+        for entry in result.valid_mapping:
+            if entry.original_file:
+                self.assertEqual(Path(entry.file).read_bytes(), entry.vss.encode())
+
     def _inner(self, name, collections):
         root = Path(self.temp_folder)
         archive = root / name
@@ -98,7 +158,8 @@ class TestGetThisArchiveMapping(TempFolderTestCase):
         self.assertEqual(result.errors, [])
         self.assertEqual(len(result.valid_mapping), 4)
         for entry in result.valid_mapping:
-            self.assertEqual(entry.original_file, rf"C:\{Path(entry.file).parent.parent.name}\Report.wer")
+            label = entry.relative_path.split("/")[0]
+            self.assertEqual(entry.original_file, rf"C:\{label}\Report.wer")
 
     def test_traversal_index_member_cannot_escape_extraction_directory(self):
         root = Path(self.temp_folder)
@@ -118,6 +179,23 @@ class TestGetThisFolderMapping(TempFolderTestCase):
         root = (Path(self.temp_folder) / "host").resolve()
         root.mkdir()
         return root
+
+    def test_extended_attributes_and_empty_files_are_not_selected_as_hives(self):
+        root = self._root()
+        for name, content in (("ea.data", b"x" * 36), ("empty.data", b""), ("hive.data", b"regf")):
+            (root / name).write_bytes(content)
+        original = r"C:\Users\test\NTUSER.DAT"
+        write_getthis(root / "GetThis.csv", [
+            ["ea.data", original, "", "", "", "$EA", "36"],
+            ["empty.data", original, "", "", "", "$DATA", "0"],
+            ["hive.data", original, "", "", "", "$DATA", "4"],
+        ], content_metadata=True)
+
+        result = scan_folder(root, [original_mapping(r".*\\NTUSER\.DAT$")], [])
+
+        self.assertEqual(result.errors, [])
+        self.assertEqual([Path(entry.file).name for entry in result.valid_mapping], ["hive.data"])
+        self.assertEqual(result.valid_mapping[0].original_file, original)
 
     def test_indices_scope_same_named_samples_and_keep_metadata_without_duplicates(self):
         root = self._root()

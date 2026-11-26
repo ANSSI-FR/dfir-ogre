@@ -106,7 +106,7 @@ mapping:
     plugin_file: $plugin_folder/chrome_extension.xml
     mapping_label: chrome_extension
     output:
-      - timeline
+      - raw_data
 
   # Chrome browsing history
   - original_file_pattern: '.*\\(?:Default|Profile [0-9]+|Guest Profile|Opera[^\\]*)\\History$'
@@ -256,7 +256,7 @@ mapping:
     plugin_file: $plugin_folder/orc_processes_2.xml
     mapping_label: processes_orc
     output:
-      - timeline
+      - raw_data
 
   # Pca App Launch record
   - original_file_pattern: '.*\\PcaAppLaunch[^\\]*\.txt$'

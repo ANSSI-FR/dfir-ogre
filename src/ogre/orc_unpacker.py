@@ -74,6 +74,14 @@ def _safe_archive_member_path(member_path: str, extraction_root: str) -> str:
     return output_path
 
 
+def _inner_archive_extract_folder(archive: str, extraction_root: str) -> str:
+    """Keep each nested archive's full identity in a separate staging area."""
+    member = Path(archive).relative_to(Path(extraction_root) / INNER_TEMP_ARCHIVE)
+    return _safe_archive_member_path(
+        member.as_posix(), os.path.join(extraction_root, ".contents")
+    )
+
+
 def unpack_dfir_orc(
     archive: str,
     password: Optional[str],
@@ -257,7 +265,6 @@ def _build_file_mapping(
     mapping: List[OriginalNameMapping] = []
     errors = []
     for archive in sub_archives:
-        archive_name = Path(archive).stem
         try:
             with py7zr.SevenZipFile(archive, password=password) as file7z:
                 file_list = file7z.getnames()
@@ -266,7 +273,7 @@ def _build_file_mapping(
                     if normalized.name.casefold() != FILE_NAME_MAPPING.casefold():
                         continue
                     try:
-                        inner_folder = os.path.join(temp_folder, archive_name)
+                        inner_folder = _inner_archive_extract_folder(archive, temp_folder)
                         get_this_file = _safe_archive_member_path(file, inner_folder)
                         file7z.reset()
                         file7z.extract(inner_folder, [file])
@@ -340,9 +347,8 @@ def _match_original_files(
                     original_file.original_name,
                 ):
 
-                    extraction_path = os.path.join(
-                        archive_extract_folder,
-                        Path(original_file.archive).stem,
+                    extraction_path = _inner_archive_extract_folder(
+                        original_file.archive, archive_extract_folder
                     )
                     try:
                         extracted_file = _safe_archive_member_path(
@@ -401,7 +407,7 @@ def _match_original_files(
                     file_mappings.append(mapping)
 
     for arch, to_extract in file_to_extract.items():
-        extract_folder = os.path.join(archive_extract_folder, Path(arch).stem)
+        extract_folder = _inner_archive_extract_folder(arch, archive_extract_folder)
 
         if to_extract.len() > 0:
             try:
@@ -450,6 +456,7 @@ def _match_archive_files(
     """
 
     valid_mapping: List[FileMapping] = []
+    main_extract_folder = os.path.join(archive_extract_folder, ".files")
 
     # Match pattern from main archive
     with py7zr.SevenZipFile(archive, password=password) as f:
@@ -469,7 +476,7 @@ def _match_archive_files(
                         try:
                             extracted_file = _safe_archive_member_path(
                                 file,
-                                archive_extract_folder,
+                                main_extract_folder,
                             )
                         except UnsafeArchivePathError as e:
                             valid_mapping.append(
@@ -512,7 +519,7 @@ def _match_archive_files(
         if len(to_extract) > 0:
             logger.info(f"Extracting {len(to_extract)} files from archive:'{archive}' ")
             try:
-                f.extract(archive_extract_folder, to_extract)
+                f.extract(main_extract_folder, to_extract)
             except Exception as e:
                 logger.info(
                     f"An error occured while extracting files from archive:'{archive}', error: {e} "
@@ -552,8 +559,7 @@ def _match_inner_archive_files(
     """
     Match archive name pattern in inner archives and extract related files
     """
-    archive_name = Path(inner_archive).stem
-    extract_folder = os.path.join(archive_extract_folder, archive_name)
+    extract_folder = _inner_archive_extract_folder(inner_archive, archive_extract_folder)
     os.makedirs(extract_folder, exist_ok=True)
 
     to_extract = _process_inner_archive_file_names(
@@ -593,10 +599,7 @@ def _process_inner_archive_file_names(
         file_list = f.getnames()
 
         archive_name = Path(inner_archive).stem
-        extraction_path = os.path.join(
-            archive_extract_folder,
-            archive_name
-        )
+        extraction_path = _inner_archive_extract_folder(inner_archive, archive_extract_folder)
         for file in file_list:
             for mapping in archive_file_mapping:
                 if mapping.archive_file_pattern:

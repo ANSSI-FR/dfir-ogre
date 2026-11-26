@@ -74,6 +74,12 @@ def read_getthis_mappings(
             sample = row["SampleName"]
             if not sample:
                 continue
+            # Extended attributes are not the file content named by FullName.
+            if row.get("AttrType") == "$EA":
+                continue
+            # A listed sample with no content cannot be parsed as an artifact.
+            if row.get("SizeInBytes") == "0":
+                continue
             relative = PurePosixPath(sample.replace("\\", "/"))
             if (
                 "\x00" in sample
